@@ -1,0 +1,61 @@
+# Target Product Profile — CLDN18.2
+# Hand-curated. Zolbetuximab (Vyloy) is the first-approved CLDN18.2 mAb (2024-2025);
+# rapidly evolving landscape with ADCs, bispecifics, CAR-T, and 2nd-gen mAbs in late
+# preclinical / phase 1-2.
+# Source: SPOTLIGHT/GLOW NEJM, FDA label, ASCO 2023-2024 plenaries.
+
+indication: "First-line CLDN18.2-positive (≥75% tumor cells with moderate-to-strong membranous staining), HER2-negative, locally advanced unresectable or metastatic gastric/GEJ adenocarcinoma — in combination with mFOLFOX6 or CAPOX"
+leading_modality: mab
+leading_drug: "Zolbetuximab (IMAB362 / Vyloy)"
+leading_sponsor: "Astellas Pharma"
+mechanism: "Chimeric IgG1 monoclonal antibody targeting CLDN18.2 (a tight-junction protein normally restricted to gastric mucosa, aberrantly expressed on cancer cell surface). Triggers ADCC, CDC, and direct apoptosis. Combined with chemotherapy backbone."
+
+pivotal_trial: "SPOTLIGHT (NCT03504397) + GLOW (NCT03653507)"
+pivotal_trial_url: "https://clinicaltrials.gov/study/NCT03504397"
+
+primary_endpoints:
+  - name: PFS (SPOTLIGHT, +mFOLFOX6)
+    metric: "10.6 months"
+    comparator: "vs 8.7 months mFOLFOX6 alone (HR 0.751, p=0.0066)"
+    citation_url: "https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(23)00620-7"
+  - name: PFS (GLOW, +CAPOX)
+    metric: "8.21 months"
+    comparator: "vs 6.80 months CAPOX alone (HR 0.687, p=0.0007)"
+  - name: OS (SPOTLIGHT)
+    metric: "18.23 months"
+    comparator: "vs 15.54 months mFOLFOX6 alone (HR 0.750, p=0.0053)"
+
+secondary_endpoints:
+  - name: ORR (SPOTLIGHT)
+    metric: "60.7%"
+    comparator: "vs 62.1% mFOLFOX6 alone (no improvement; benefit is in PFS/OS depth)"
+  - name: DoR (SPOTLIGHT)
+    metric: "9.0 months"
+
+safety:
+  common_aes:
+    - "Nausea: 81-87% (substantially elevated vs chemo alone)"
+    - "Vomiting: 65-67%"
+    - "Decreased appetite: 47%"
+    - "Fatigue: 36%"
+    - "Diarrhea: 35%"
+  aes_of_special_interest:
+    - "Severe nausea/vomiting at first infusion: ~16% grade 3, requires aggressive antiemetic prophylaxis (NK-1 RA + 5-HT3 RA + dex)"
+    - "Hypersensitivity reactions: ~17%, grade 3+ ~1%"
+    - "Anaphylaxis: rare but reported"
+  discontinuation_rate: "13.5% due to AE (SPOTLIGHT)"
+  boxed_warning: "Severe Nausea, Vomiting, and Hypersensitivity (incl Anaphylaxis); Embryo-Fetal Toxicity"
+
+dosing:
+  regimen: "800 mg/m² loading dose IV cycle 1 day 1, then 600 mg/m² q3w with chemo backbone"
+  route: "IV infusion (~2 hr loading, ~1 hr subsequent)"
+  line_of_therapy: "1L locally advanced/metastatic G/GEJ + mFOLFOX6 or CAPOX"
+  biomarker_selection: "CLDN18.2 IHC ≥75% of tumor cells with moderate-to-strong membranous staining (Ventana CLDN18 [43-14A] CDx)"
+  half_life: "~13 days"
+
+differentiation: "First-in-class CLDN18.2 therapy in gastric cancer, opening a new biomarker-defined population (~38% of HER2-negative gastric/GEJ patients are CLDN18.2-high). Simple mAb mechanism enables broad combinability; chemo-additive without major overlapping toxicity beyond GI. Strong PFS+OS benefit despite no ORR improvement signals depth-of-response advantage."
+unmet_need: "ORR not improved over chemo alone — PFS/OS gain comes from delayed progression rather than response rate; severe nausea/vomiting requires intensive antiemetic prophylaxis; resistance mechanisms not yet characterized; second-line post-zolbetuximab landscape undefined; non-gastric CLDN18.2+ tumors (pancreatic, biliary) underserved."
+competitive_pressure: "ADC tier rapidly building: CMG901 (AstraZeneca/Keymed), AZD0901, TST001, LM-302, RC118 — multiple in phase 2-3. CAR-T contenders CT041 (CARsgen, satricabtagene autoleucel) showing 50%+ ORR in phase 1 gastric. Bispecifics AZD5863 (CLDN18.2×CD3) and Q-1802 in early development. Second-gen mAbs (osemitamab/TST001) attempting to improve safety profile. CLDN18.2-targeted radioligands also emerging."
+
+last_curated: 2026-05-03
+curator_notes: "CLDN18.2 landscape moving fastest of the three antigens tracked. Expect TPP refresh quarterly as ADC and CAR-T phase 2/3 readouts arrive. CT041 may shift CAR-T into 2L+ standard if phase 2 confirms phase 1 ORR."

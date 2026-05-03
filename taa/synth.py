@@ -154,13 +154,15 @@ async def synthesize(data: AntigenData) -> SynthOutput | None:
         block.text for block in response.content if hasattr(block, "text")
     ).strip()
 
-    # The model often wraps JSON in ```json fences — strip them defensively.
-    if raw_text.startswith("```"):
-        lines = raw_text.split("\n")
-        raw_text = "\n".join(lines[1:-1] if lines[-1].startswith("```") else lines[1:])
+    # The model sometimes wraps JSON in ```json fences and/or appends trailing
+    # prose ("Here's the JSON..."). Extract the first balanced JSON object.
+    json_text = _extract_first_json_object(raw_text)
+    if json_text is None:
+        print(f"  [synth] {data.antigen.slug}: no JSON object found in response", file=sys.stderr)
+        return None
 
     try:
-        parsed = json.loads(raw_text)
+        parsed = json.loads(json_text)
     except json.JSONDecodeError as e:
         print(f"  [synth] {data.antigen.slug}: JSON decode failed: {e}", file=sys.stderr)
         return None
@@ -178,6 +180,40 @@ async def synthesize(data: AntigenData) -> SynthOutput | None:
 
 
 CITATIONS_PER_SENTENCE_CAP = 4
+
+
+def _extract_first_json_object(text: str) -> str | None:
+    """Find the first balanced top-level {...} block in the response.
+
+    Tolerates leading ```json fences, trailing prose, leading/trailing whitespace.
+    Walks brace depth respecting string literals (so { inside strings doesn't
+    confuse the parser). Returns None if no balanced object found.
+    """
+    start = text.find("{")
+    if start == -1:
+        return None
+    depth = 0
+    in_str = False
+    escape = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_str = False
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start : i + 1]
+    return None
 
 
 def validate_against_citations(

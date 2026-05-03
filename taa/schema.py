@@ -4,8 +4,10 @@ All structured data flows through these. Synthesis output (LLM-generated prose)
 is a separate concern handled in taa/synth.py and lives in dist/, not data/.
 """
 
+from __future__ import annotations
+
 from datetime import date, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -64,6 +66,7 @@ class Antigen(BaseModel):
     aliases: list[str] = Field(default_factory=list)
     uniprot_id: str | None = None
     hgnc_symbol: str | None = None
+    ensembl_id: str | None = None  # Open Targets primary identifier
     indication_tags: list[str] = Field(default_factory=list)  # e.g., ["breast", "gastric"]
     notes: str | None = None
     exclude_terms: list[str] = Field(default_factory=list)  # false-positive filters per source
@@ -126,7 +129,7 @@ class Program(BaseModel):
 class SourceFreshness(BaseModel):
     """Per-source freshness metadata for the stale-data UX."""
 
-    source: Literal["ctgov", "pubmed", "openalex", "edgar"]
+    source: Literal["ctgov", "pubmed", "openalex", "edgar", "opentargets", "news"]
     last_success: datetime | None = None
     last_attempt: datetime
     error: str | None = None  # populated if last_attempt failed
@@ -137,14 +140,103 @@ class SourceFreshness(BaseModel):
         return self.error is not None
 
 
+# ---- Open Targets biology ------------------------------------------------------
+
+
+class OpenTargetsData(BaseModel):
+    """Per-target biology summary from Open Targets.
+
+    Adds the layer none of CT.gov / PubMed / OpenAlex / EDGAR have: druggability
+    score, mechanism, top disease associations, known drug list, safety profile.
+    """
+
+    ensembl_id: str
+    approved_symbol: str
+    approved_name: str
+    biotype: str | None = None
+    tractability: list[dict[str, Any]] = Field(default_factory=list)  # modality + label
+    top_diseases: list[dict[str, Any]] = Field(default_factory=list)  # name + score
+    known_drugs: list[dict[str, Any]] = Field(default_factory=list)
+    safety_liabilities: list[dict[str, Any]] = Field(default_factory=list)
+
+
+# ---- News (RSS aggregation) ---------------------------------------------------
+
+
+class NewsItem(BaseModel):
+    title: str
+    summary: str | None = None
+    url: HttpUrl
+    source: str  # "FierceBiotech", "PRNewswire pharma", etc.
+    published_at: datetime | None = None
+
+
+# ---- Target Product Profile (curated) -----------------------------------------
+
+
+class TPPEndpoint(BaseModel):
+    """One efficacy endpoint with metric, comparator, source citation."""
+
+    name: str  # "ORR", "PFS", "OS", "DCR"
+    metric: str  # "9.9 months", "52%", "HR 0.50"
+    comparator: str | None = None  # "vs 5.1 months chemo (DESTINY-Breast04)"
+    citation_url: str | None = None  # link to the trial readout / paper / FDA label
+
+
+class TPPSafety(BaseModel):
+    common_aes: list[str] = Field(default_factory=list)  # ["nausea (50%)", "fatigue (45%)"]
+    aes_of_special_interest: list[str] = Field(default_factory=list)  # ILD, CRS, etc.
+    discontinuation_rate: str | None = None  # "13.6%"
+    boxed_warning: str | None = None  # FDA black-box warning if applicable
+
+
+class TPPDosing(BaseModel):
+    regimen: str  # "5.4 mg/kg IV q3w"
+    route: str  # "IV", "SC", "Oral"
+    line_of_therapy: str | None = None  # "2L+ HER2+ MBC"
+    biomarker_selection: str | None = None  # "HER2 IHC 3+ or 2+/ISH+"
+    half_life: str | None = None  # "5.7 days"
+
+
+class TargetProductProfile(BaseModel):
+    """Curated TPP for one antigen — captures the current clinical-development
+    benchmark a new program needs to meet or beat. Lives in data/tpp/{slug}.yaml,
+    hand-curated. The biology layer (Open Targets) feeds the synthesis prompt;
+    the TPP feeds the explicit benchmark section on the scorecard.
+    """
+
+    indication: str  # "HER2+ metastatic breast cancer (2L+)"
+    leading_modality: Modality
+    leading_drug: str  # "Trastuzumab deruxtecan (T-DXd / Enhertu)"
+    leading_sponsor: str  # "Daiichi-Sankyo / AstraZeneca"
+    mechanism: str  # one-line, plain English
+
+    pivotal_trial: str | None = None  # "DESTINY-Breast04 (NCT03734029)"
+    pivotal_trial_url: str | None = None
+
+    primary_endpoints: list[TPPEndpoint] = Field(default_factory=list)
+    secondary_endpoints: list[TPPEndpoint] = Field(default_factory=list)
+
+    safety: TPPSafety
+    dosing: TPPDosing
+
+    differentiation: str  # one-line, what makes the leading drug differentiated
+    unmet_need: str  # one-line, what gap in the SoC remains
+    competitive_pressure: str  # one-line, what's coming behind the leader
+
+    last_curated: date
+    curator_notes: str | None = None
+
+
 # ---- Top-level antigen page data ----------------------------------------------
 
 
 class AntigenData(BaseModel):
     """Everything needed to render one antigen scorecard. Committed to data/{slug}.json.
 
-    Synthesis output is NOT included here — it's a build artifact in dist/, generated
-    fresh from this structured data on every render to avoid git diff churn.
+    Synthesis output and TPP are NOT included here. Synthesis is a dist/ build
+    artifact (decision 1B). TPP is loaded from data/tpp/{slug}.yaml and merged
+    at render time.
     """
 
     antigen: Antigen
@@ -154,6 +246,8 @@ class AntigenData(BaseModel):
     filings: list[Filing] = Field(default_factory=list)
     citations: list[Citation] = Field(default_factory=list)
     freshness: list[SourceFreshness] = Field(default_factory=list)
+    open_targets: OpenTargetsData | None = None
+    news: list[NewsItem] = Field(default_factory=list)
     generated_at: datetime
 
 
@@ -161,12 +255,14 @@ class AntigenData(BaseModel):
 
 
 class SynthSentence(BaseModel):
-    """One sentence of the synthesis paragraph. Every sentence MUST cite at least
-    one citation_id, validated by the renderer. Sentences with orphan or empty
-    citations are dropped before render (per /plan-eng-review decision)."""
+    """One sentence of the synthesis paragraph. Every sentence SHOULD cite at
+    least one citation_id; the renderer drops sentences whose citations are
+    empty or orphaned. We don't enforce min_length at the Pydantic boundary
+    because a single bad sentence shouldn't fail the whole synthesis batch
+    (validate_against_citations handles the drop downstream)."""
 
     text: str
-    citation_ids: list[int] = Field(min_length=1)
+    citation_ids: list[int] = Field(default_factory=list)
 
 
 class SynthParagraph(BaseModel):

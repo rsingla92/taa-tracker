@@ -326,6 +326,210 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
 .status-unknown::before { content: "○ "; color: var(--muted); }
 .status-unknown { color: var(--muted); }
 
+/* ===== Modality TOC (jump-nav after the cross-cut grid) ===== */
+.modality-toc {
+  margin-top: 24px;
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  font-size: 13px;
+}
+.modality-toc .toc-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.modality-toc .toc-link {
+  border: none;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.modality-toc .toc-link:hover { color: var(--accent); }
+.modality-toc .toc-link-tpp { color: var(--active); font-weight: 500; }
+.toc-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* ===== Target Product Profile section ===== */
+.tpp {
+  margin-top: 56px;
+  padding: 28px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--active);
+  border-radius: 2px;
+}
+.tpp h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  font-variation-settings: "opsz" 36;
+  margin: 0 0 24px;
+  color: var(--text);
+}
+.tpp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.tpp-leader-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--text);
+}
+.tpp-pivotal { font-size: 13px; }
+.tpp-mech {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.tpp-mech p {
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 6px 0 0;
+}
+.tpp-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 8px;
+  display: block;
+  font-family: var(--font-body);
+}
+.tpp-sublabel {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 12px 0 4px;
+}
+.tpp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.tpp-block { font-size: 14px; }
+.tpp-block p { margin: 4px 0; line-height: 1.5; }
+.tpp-block p strong { font-weight: 500; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 6px; }
+.tpp-list { list-style: none; padding: 0; margin: 0; font-size: 13px; line-height: 1.6; }
+.tpp-list li { padding-left: 12px; position: relative; }
+.tpp-list li::before { content: "·"; position: absolute; left: 0; color: var(--muted); }
+.tpp-endpoint-list { list-style: none; padding: 0; margin: 0; font-size: 14px; }
+.tpp-endpoint-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 60px 110px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.tpp-endpoint-list li:last-child { border-bottom: none; }
+.ep-name { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); }
+.ep-metric { font-family: var(--font-mono); font-feature-settings: "tnum"; color: var(--text); font-size: 14px; }
+.ep-comparator { font-size: 12px; }
+.boxed-warning {
+  font-size: 12px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--error) 10%, var(--surface));
+  border-left: 2px solid var(--error);
+  color: var(--text);
+}
+.tpp-strategic {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 20px;
+}
+.tpp-strat-block p { font-size: 13px; line-height: 1.55; margin: 4px 0 0; color: var(--text); }
+.tpp-foot {
+  margin-top: 20px !important;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 11px !important;
+}
+
+/* ===== Open Targets biology section ===== */
+.biology {
+  margin-top: 56px;
+}
+.biology h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  font-variation-settings: "opsz" 36;
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.bio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+.bio-block { font-size: 13px; }
+
+/* ===== News section ===== */
+.news {
+  margin-top: 56px;
+}
+.news h2 {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 16px;
+  font-family: var(--font-body);
+}
+.news-list { list-style: none; padding: 0; margin: 0; }
+.news-list li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.news-list li:last-child { border-bottom: none; }
+.news-title {
+  font-weight: 500;
+  color: var(--text);
+  border: none;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.news-title:hover { color: var(--accent); }
+.news-meta {
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex; gap: 12px;
+}
+.news-source { font-weight: 500; }
+.news-summary {
+  margin: 6px 0 0 !important;
+  font-size: 13px !important;
+  line-height: 1.45;
+}
+
 /* ===== Synthesis paragraph (LLM narrative, citation-grounded) ===== */
 .synthesis {
   margin-top: 64px;
@@ -436,4 +640,8 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   .crosscut-row .cc-phase { display: none; }
   .cite-list { columns: 1; }
   table.programs { font-size: 13px; }
+  .tpp-grid { grid-template-columns: 1fr; }
+  .tpp-strategic { grid-template-columns: 1fr; }
+  .bio-grid { grid-template-columns: 1fr; }
+  .modality-toc { font-size: 12px; }
 }

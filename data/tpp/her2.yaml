@@ -1,0 +1,59 @@
+# Target Product Profile — HER2
+# Hand-curated. Reflects the current SoC benchmark a new HER2 program needs to meet.
+# Source data: FDA labels, NEJM/JCO publications, ASCO/AACR plenary abstracts.
+# Reviewed against Daiichi/AZ T-DXd label and DESTINY-Breast trial series.
+
+indication: "HER2-positive metastatic breast cancer (2L+); expanding into HER2-low and HER2-ultralow"
+leading_modality: adc
+leading_drug: "Trastuzumab deruxtecan (T-DXd / Enhertu)"
+leading_sponsor: "Daiichi Sankyo / AstraZeneca"
+mechanism: "HER2-directed antibody-drug conjugate. Humanized anti-HER2 IgG1 mAb covalently linked via a cleavable tetrapeptide linker to a topoisomerase I inhibitor payload (DXd). Drug-to-antibody ratio ~8."
+
+pivotal_trial: "DESTINY-Breast04 (NCT03734029)"
+pivotal_trial_url: "https://clinicaltrials.gov/study/NCT03734029"
+
+primary_endpoints:
+  - name: PFS
+    metric: "9.9 months"
+    comparator: "vs 5.1 months physician's choice chemo (HR 0.50, p<0.001)"
+    citation_url: "https://www.nejm.org/doi/full/10.1056/NEJMoa2203690"
+  - name: OS
+    metric: "23.4 months"
+    comparator: "vs 16.8 months chemo (HR 0.64, p=0.001)"
+    citation_url: "https://www.nejm.org/doi/full/10.1056/NEJMoa2203690"
+
+secondary_endpoints:
+  - name: ORR
+    metric: "52.3%"
+    comparator: "vs 16.3% chemo"
+  - name: DCR
+    metric: "85%"
+  - name: DoR (median)
+    metric: "10.7 months"
+
+safety:
+  common_aes:
+    - "Nausea (~73%)"
+    - "Fatigue (~48%)"
+    - "Alopecia (~38%)"
+    - "Vomiting (~36%)"
+    - "Neutropenia (~34%)"
+  aes_of_special_interest:
+    - "ILD/pneumonitis: 12.1% any grade, 0.8% grade 5 (DESTINY-Breast04 pooled)"
+    - "Decreased LVEF: 4-5%"
+  discontinuation_rate: "13.6% (any-cause AE)"
+  boxed_warning: "Interstitial Lung Disease and Pneumonitis; Embryo-Fetal Toxicity"
+
+dosing:
+  regimen: "5.4 mg/kg IV every 3 weeks"
+  route: "IV infusion (90 min initial, 30 min subsequent)"
+  line_of_therapy: "2L+ HER2+ MBC; 1L HER2-low MBC after DESTINY-Breast06"
+  biomarker_selection: "HER2 IHC 3+, IHC 2+/ISH+, or IHC 1+/2+ (HER2-low); HER2-ultralow being characterized"
+  half_life: "~5.7 days (effective)"
+
+differentiation: "First HER2-directed therapy with activity in HER2-low and HER2-ultralow populations, expanding addressable patient population ~3x beyond traditional HER2+ definition. Topoisomerase I payload (DXd) and high DAR enable bystander effect on heterogeneous tumors."
+unmet_need: "Resistance after T-DXd progression has limited 3L+ options; ILD risk requires careful patient selection and monitoring; brain-metastatic activity needs more data; HER2-mutated NSCLC underserved before T-DXd label expansion."
+competitive_pressure: "Multiple second-gen HER2 ADCs in phase 3: disitamab vedotin (RemeGen, approved in China for urothelial), MRG002, ARX788. Bispecifics zanidatamab (Jazz) and petosemtamab (Merus) in late-stage. CAR-T entrants in early phase."
+
+last_curated: 2026-05-03
+curator_notes: "Endpoints reflect HER2+ MBC pivotal (DB-04). HER2-low (DB-06) and HER2-ultralow data evolving; will need refresh when DB-09 reads out."

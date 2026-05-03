@@ -1,0 +1,62 @@
+# Target Product Profile — BCMA
+# Hand-curated. Anchored to ciltacabtagene autoleucel (Carvykti) as the leading
+# CAR-T benchmark; BCMA bispecifics (Tecvayli) are the second-line standard.
+# Source: NEJM CARTITUDE-1/4, FDA labels, ASH plenaries.
+
+indication: "Relapsed/refractory multiple myeloma (R/R MM); 1-3 prior lines (CARTITUDE-4)"
+leading_modality: car-t
+leading_drug: "Ciltacabtagene autoleucel (cilta-cel / Carvykti)"
+leading_sponsor: "Janssen / Legend Biotech"
+mechanism: "Autologous CAR-T cell therapy. Two BCMA-targeting single-domain antibodies (VHH) linked to 4-1BB costimulatory + CD3-zeta signaling domains. Lentiviral vector. Manufactured per-patient from apheresed PBMCs."
+
+pivotal_trial: "CARTITUDE-4 (NCT04181827)"
+pivotal_trial_url: "https://clinicaltrials.gov/study/NCT04181827"
+
+primary_endpoints:
+  - name: PFS (12-mo)
+    metric: "75.9%"
+    comparator: "vs 48.6% standard care (HR 0.26, p<0.0001)"
+    citation_url: "https://www.nejm.org/doi/full/10.1056/NEJMoa2303379"
+  - name: ORR
+    metric: "84.6%"
+    comparator: "vs 67.3% standard care"
+  - name: sCR / CR rate
+    metric: "73.1%"
+    comparator: "vs 21.8% standard care"
+
+secondary_endpoints:
+  - name: MRD-negativity (10^-5)
+    metric: "60.6%"
+    comparator: "vs 15.6% standard care"
+  - name: DoR (median)
+    metric: "Not reached at median 16-mo follow-up"
+  - name: OS
+    metric: "Trending favorable; not yet mature"
+
+safety:
+  common_aes:
+    - "Cytokine release syndrome: 76.1% (any grade), 1.1% grade 3+"
+    - "Neurotoxicity (ICANS): 20.5% any grade, 2.7% grade 3+"
+    - "Neutropenia (~95%)"
+    - "Thrombocytopenia (~55%)"
+    - "Anemia (~45%)"
+  aes_of_special_interest:
+    - "Movement and neurocognitive treatment-emergent AEs (MNT): ~5%, including parkinsonism"
+    - "Secondary T-cell malignancies: FDA class warning for all CAR-T (rare but documented)"
+    - "Prolonged cytopenias requiring growth factor support"
+  discontinuation_rate: "9% (CARTITUDE-4 standard care arm vs cilta-cel manufacturing failure rate ~3%)"
+  boxed_warning: "Cytokine Release Syndrome; Neurologic Toxicities incl Parkinsonism and Guillain-Barré; HLH/MAS; Prolonged Cytopenias; Secondary Hematologic Malignancies"
+
+dosing:
+  regimen: "0.5–1.0 × 10^6 CAR+ T cells/kg single IV infusion after lymphodepletion (cyclophosphamide + fludarabine × 3 days)"
+  route: "Single IV infusion (one-time, manufactured per-patient)"
+  line_of_therapy: "1-3 prior lines (post-CARTITUDE-4 expansion); previously 4+ lines (CARTITUDE-1)"
+  biomarker_selection: "BCMA expression assumed (essentially universal in MM); no IHC required pre-treatment in current label"
+  half_life: "Not applicable — CAR-T cells persist in circulation for months/years"
+
+differentiation: "Deepest and most durable responses in R/R MM to date — sCR rates exceeding 70% with one-time treatment; allows treatment-free intervals not seen with continuous BCMA bispecifics. Earlier-line move (CARTITUDE-4) substantially expanded addressable population."
+unmet_need: "Manufacturing time (4-6 weeks vein-to-vein) excludes rapidly progressing patients; bridging therapy gaps; MNT (parkinsonism) signal limits broad earlier-line adoption; durability past 2-3 years uncertain in earlier-line population; relapse after BCMA CAR-T leaves limited options (GPRC5D may help)."
+competitive_pressure: "Idecabtagene vicleucel (Abecma, BMS/2seventy) is the comparator CAR-T. BCMA bispecifics teclistamab (Tecvayli/J&J), elranatamab (Elrexfio/Pfizer), linvoseltamab (Regeneron) offer off-the-shelf alternatives. ABBV-383 in phase 3. Dual-target bispecifics (BCMA+CD3, BCMA+GPRC5D) in early development. Allogeneic BCMA CAR-T programs (Allogene, Caribou) chasing manufacturing-time wedge."
+
+last_curated: 2026-05-03
+curator_notes: "CARTITUDE-4 readout shifted treatment paradigm to earlier-line CAR-T. MNT signal needs ongoing monitoring across longer follow-up; FDA class warning on secondary malignancies applies."

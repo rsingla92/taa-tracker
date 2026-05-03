@@ -6,7 +6,7 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from taa.schema import AntigenData, Modality, Phase, Program, SynthOutput
+from taa.schema import AntigenData, Modality, Phase, Program, SynthOutput, TargetProductProfile
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
@@ -58,6 +58,7 @@ def render_antigen(
     data: AntigenData,
     env: Environment | None = None,
     synth: SynthOutput | None = None,
+    tpp: TargetProductProfile | None = None,
 ) -> str:
     """Render one antigen scorecard page.
 
@@ -68,7 +69,6 @@ def render_antigen(
     env = env or make_env()
     tmpl = env.get_template("antigen.html")
 
-    # Collect every citation_id actually referenced on the page
     referenced_ids: set[int] = {cid for p in data.programs for cid in p.citation_ids}
     if synth:
         for para in synth.paragraphs:
@@ -90,6 +90,10 @@ def render_antigen(
         modality_order=MODALITY_ORDER,
         total_sources=len(data.citations),
         synth=synth,
+        tpp=tpp,
+        open_targets=data.open_targets,
+        news=data.news[:8],  # cap inline news list to top-8 most recent
+        news_total=len(data.news),
         paper_count=len(data.papers),
         filing_count=len(data.filings),
     )

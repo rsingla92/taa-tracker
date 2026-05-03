@@ -16,8 +16,8 @@ load_dotenv()  # Pick up ANTHROPIC_API_KEY, NCBI_API_KEY, EDGAR_USER_AGENT from 
 
 from taa.normalize import filter_excluded, load_modality_map, trials_to_programs
 from taa.render import make_env, render_antigen, render_index
-from taa.schema import Antigen, AntigenData
-from taa.sources import ctgov, edgar, openalex, pubmed
+from taa.schema import Antigen, AntigenData, TargetProductProfile
+from taa.sources import ctgov, edgar, news, openalex, opentargets, pubmed
 from taa.synth import synthesize, validate_against_citations
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -49,19 +49,22 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
     print(f"  fetching {antigen.primary_name}…", file=sys.stderr)
 
     # Per-source semaphores live in each module — these tasks all share the asyncio
-    # event loop and respect their own rate limits independently.
+    # event loop and respect their own rate limits independently. Citation ID ranges
+    # keep page-local IDs unique across sources without coordination.
     ctgov_task = asyncio.create_task(ctgov.fetch(antigen, citation_id_start=1))
     pubmed_task = asyncio.create_task(pubmed.fetch(antigen, citation_id_start=10000))
     openalex_task = asyncio.create_task(openalex.fetch(antigen, citation_id_start=20000))
     edgar_task = asyncio.create_task(edgar.fetch(antigen, citation_id_start=30000))
+    ot_task = asyncio.create_task(opentargets.fetch(antigen, citation_id_start=40000))
+    news_task = asyncio.create_task(news.fetch(antigen, citation_id_start=50000))
 
     ctgov_r = await ctgov_task
     pubmed_r = await pubmed_task
     openalex_r = await openalex_task
     edgar_r = await edgar_task
+    ot_r = await ot_task
+    news_r = await news_task
 
-    # Normalize trials → programs (only CT.gov drives Programs in v0.1; v0.2 will
-    # also use EDGAR text extraction to discover programs not visible in CT.gov)
     trials = filter_excluded(ctgov_r.trials, antigen)
     modality_map = _load_modality_map()
     programs, unknowns = trials_to_programs(trials, antigen, modality_map)  # type: ignore[arg-type]
@@ -79,10 +82,34 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
         citations=ctgov_r.citations
         + pubmed_r.citations
         + openalex_r.citations
-        + edgar_r.citations,
-        freshness=[ctgov_r.freshness, pubmed_r.freshness, openalex_r.freshness, edgar_r.freshness],
+        + edgar_r.citations
+        + ot_r.citations
+        + news_r.citations,
+        freshness=[
+            ctgov_r.freshness,
+            pubmed_r.freshness,
+            openalex_r.freshness,
+            edgar_r.freshness,
+            ot_r.freshness,
+            news_r.freshness,
+        ],
+        open_targets=ot_r.data,
+        news=news_r.items,
         generated_at=datetime.now(timezone.utc),
     )
+
+
+def _load_tpp(slug: str) -> TargetProductProfile | None:
+    """Load curated TPP from data/tpp/{slug}.yaml; None if not curated yet."""
+    tpp_file = DATA_DIR / "tpp" / f"{slug}.yaml"
+    if not tpp_file.exists():
+        return None
+    try:
+        raw = yaml.safe_load(tpp_file.read_text())
+        return TargetProductProfile.model_validate(raw)
+    except Exception as e:  # noqa: BLE001
+        print(f"  [tpp] {slug}: failed to load TPP: {e}", file=sys.stderr)
+        return None
 
 
 async def _refresh_all() -> None:
@@ -115,16 +142,19 @@ async def _refresh_all() -> None:
                 file=sys.stderr,
             )
 
+        # Load curated TPP if present
+        tpp = _load_tpp(antigen.slug)
+
         # Render
-        html = render_antigen(data, env, synth=synth)
+        html = render_antigen(data, env, synth=synth, tpp=tpp)
         (DIST_DIR / f"{antigen.slug}.html").write_text(html)
 
-        program_count = len(data.programs)
-        paper_count = len(data.papers)
-        filing_count = len(data.filings)
+        ot_drugs = len(data.open_targets.known_drugs) if data.open_targets else 0
+        tpp_marker = "·TPP" if tpp else ""
         print(
             f"  wrote dist/{antigen.slug}.html "
-            f"({program_count} programs · {paper_count} papers · {filing_count} filings)",
+            f"({len(data.programs)}p·{len(data.papers)}pap·{len(data.filings)}fil·"
+            f"{ot_drugs}OT-drugs·{len(data.news)}news{tpp_marker})",
             file=sys.stderr,
         )
         rendered.append(data)

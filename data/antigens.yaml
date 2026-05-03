@@ -14,6 +14,7 @@
     - CD340
   uniprot_id: P04626
   hgnc_symbol: ERBB2
+  ensembl_id: ENSG00000141736
   indication_tags:
     - breast
     - gastric
@@ -33,6 +34,7 @@
     - CD269
   uniprot_id: Q02223
   hgnc_symbol: TNFRSF17
+  ensembl_id: ENSG00000048462
   indication_tags:
     - multiple myeloma
     - heme
@@ -50,6 +52,7 @@
     - CLDN18A2
   uniprot_id: P56856
   hgnc_symbol: CLDN18
+  ensembl_id: ENSG00000066405
   indication_tags:
     - gastric
     - pancreatic

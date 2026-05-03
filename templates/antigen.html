@@ -50,6 +50,156 @@
   </div>
 </section>
 
+{# ---- Modality TOC ---- #}
+{% if modality_summary %}
+<nav class="modality-toc" aria-label="Programs by modality">
+  <span class="toc-label">Jump to</span>
+  {% for row in modality_summary %}
+    <a href="#modality-{{ row.modality }}" class="toc-link">
+      <span class="toc-swatch swatch-{{ row.modality }}"></span>{{ row.label }} <span class="meta-text">({{ row.count }})</span>
+    </a>
+  {% endfor %}
+  {% if tpp %}<a href="#tpp" class="toc-link toc-link-tpp">TPP benchmark</a>{% endif %}
+  {% if open_targets %}<a href="#biology" class="toc-link">Biology</a>{% endif %}
+  {% if news %}<a href="#news" class="toc-link">News ({{ news | length }})</a>{% endif %}
+  <a href="#citations" class="toc-link">Citations</a>
+</nav>
+{% endif %}
+
+{# ---- Target Product Profile (curated benchmark) ---- #}
+{% if tpp %}
+<section class="tpp" id="tpp">
+  <h2>Target Product Profile · current standard benchmark</h2>
+  <div class="tpp-header">
+    <div class="tpp-leader">
+      <div class="tpp-leader-name">{{ tpp.leading_drug }}</div>
+      <div class="meta-text">{{ tpp.leading_sponsor }} · {{ modality_label[tpp.leading_modality] }} · {{ tpp.indication }}</div>
+    </div>
+    {% if tpp.pivotal_trial %}
+    <div class="tpp-pivotal">
+      <span class="meta-text">Pivotal:</span>
+      {% if tpp.pivotal_trial_url %}<a href="{{ tpp.pivotal_trial_url }}">{{ tpp.pivotal_trial }}</a>{% else %}{{ tpp.pivotal_trial }}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="tpp-mech">
+    <span class="tpp-label">MECHANISM</span>
+    <p>{{ tpp.mechanism }}</p>
+  </div>
+
+  <div class="tpp-grid">
+    <div class="tpp-block">
+      <h3 class="tpp-label">Primary endpoints</h3>
+      <ul class="tpp-endpoint-list">
+        {% for ep in tpp.primary_endpoints %}
+        <li>
+          <span class="ep-name">{{ ep.name }}</span>
+          <span class="ep-metric">{{ ep.metric }}</span>
+          {% if ep.comparator %}<span class="ep-comparator meta-text">{{ ep.comparator }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="tpp-block">
+      <h3 class="tpp-label">Secondary endpoints</h3>
+      <ul class="tpp-endpoint-list">
+        {% for ep in tpp.secondary_endpoints %}
+        <li>
+          <span class="ep-name">{{ ep.name }}</span>
+          <span class="ep-metric">{{ ep.metric }}</span>
+          {% if ep.comparator %}<span class="ep-comparator meta-text">{{ ep.comparator }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="tpp-block">
+      <h3 class="tpp-label">Safety</h3>
+      <ul class="tpp-list">
+        {% for ae in tpp.safety.common_aes[:5] %}<li class="meta-text">{{ ae }}</li>{% endfor %}
+      </ul>
+      {% if tpp.safety.aes_of_special_interest %}
+      <h4 class="tpp-sublabel">AESI</h4>
+      <ul class="tpp-list">
+        {% for ae in tpp.safety.aes_of_special_interest %}<li>{{ ae }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+      {% if tpp.safety.discontinuation_rate %}<p class="meta-text">Discontinuation: {{ tpp.safety.discontinuation_rate }}</p>{% endif %}
+      {% if tpp.safety.boxed_warning %}<p class="boxed-warning">⚠ Boxed: {{ tpp.safety.boxed_warning }}</p>{% endif %}
+    </div>
+
+    <div class="tpp-block">
+      <h3 class="tpp-label">Dosing &amp; PK</h3>
+      <p><strong>Regimen:</strong> {{ tpp.dosing.regimen }}</p>
+      <p><strong>Route:</strong> {{ tpp.dosing.route }}</p>
+      {% if tpp.dosing.line_of_therapy %}<p><strong>Line:</strong> {{ tpp.dosing.line_of_therapy }}</p>{% endif %}
+      {% if tpp.dosing.biomarker_selection %}<p><strong>Biomarker:</strong> {{ tpp.dosing.biomarker_selection }}</p>{% endif %}
+      {% if tpp.dosing.half_life %}<p><strong>t½:</strong> {{ tpp.dosing.half_life }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="tpp-strategic">
+    <div class="tpp-strat-block">
+      <h3 class="tpp-label">Differentiation</h3>
+      <p>{{ tpp.differentiation }}</p>
+    </div>
+    <div class="tpp-strat-block">
+      <h3 class="tpp-label">Unmet need</h3>
+      <p>{{ tpp.unmet_need }}</p>
+    </div>
+    <div class="tpp-strat-block">
+      <h3 class="tpp-label">Competitive pressure</h3>
+      <p>{{ tpp.competitive_pressure }}</p>
+    </div>
+  </div>
+
+  <p class="tpp-foot meta-text">Curated {{ tpp.last_curated.isoformat() }}{% if tpp.curator_notes %} · {{ tpp.curator_notes }}{% endif %}</p>
+</section>
+{% endif %}
+
+{# ---- Open Targets biology ---- #}
+{% if open_targets %}
+<section class="biology" id="biology">
+  <h2>Biology · {{ open_targets.approved_symbol }} ({{ open_targets.approved_name }})</h2>
+  <div class="bio-grid">
+    {% if open_targets.tractability %}
+    <div class="bio-block">
+      <h3 class="tpp-label">Tractability</h3>
+      <ul class="tpp-list">
+        {% for t in open_targets.tractability[:6] %}<li>{{ t.label }} <span class="meta-text">({{ t.modality }})</span></li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if open_targets.top_diseases %}
+    <div class="bio-block">
+      <h3 class="tpp-label">Top disease associations</h3>
+      <ul class="tpp-list">
+        {% for d in open_targets.top_diseases[:6] %}
+        <li>{{ d.name }} <span class="meta-text mono">{{ '%.2f'|format(d.score) }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if open_targets.safety_liabilities %}
+    <div class="bio-block">
+      <h3 class="tpp-label">Safety liabilities</h3>
+      <ul class="tpp-list">
+        {% for s in open_targets.safety_liabilities[:5] %}<li>{{ s.event }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if open_targets.known_drugs %}
+  <p class="meta-text" style="margin-top: 16px;">{{ open_targets.known_drugs | length }} drugs identified by Open Targets · <a href="https://platform.opentargets.org/target/{{ open_targets.ensembl_id }}">view on Open Targets →</a></p>
+  {% endif %}
+</section>
+{% endif %}
+
 {# ---- Synthesis (LLM narrative, citation-grounded) ---- #}
 {% if synth and synth.paragraphs %}
 <section class="synthesis">
@@ -67,7 +217,7 @@
 {% for modality_key in modality_order %}
   {% set group = programs | selectattr('modality', 'equalto', modality_key) | list %}
   {% if group %}
-  <section class="modality-block">
+  <section class="modality-block" id="modality-{{ modality_key }}">
     <div class="modality-head">
       <span class="modality-swatch swatch-{{ modality_key }}"></span>
       <h3 class="modality-name">{{ modality_label[modality_key] }} programs</h3>
@@ -117,9 +267,29 @@
 </section>
 {% endif %}
 
+{# ---- Recent news (RSS aggregation) ---- #}
+{% if news %}
+<section class="news" id="news">
+  <h2>Recent news · {{ news_total }} item{% if news_total != 1 %}s{% endif %} from biotech press</h2>
+  <ul class="news-list">
+    {% for item in news %}
+    <li>
+      <a class="news-title" href="{{ item.url }}" rel="nofollow noopener">{{ item.title }}</a>
+      <div class="news-meta meta-text">
+        <span class="news-source">{{ item.source }}</span>
+        {% if item.published_at %}<span class="news-date">{{ item.published_at.strftime('%Y-%m-%d') }}</span>{% endif %}
+      </div>
+      {% if item.summary %}<p class="news-summary meta-text">{{ item.summary[:240] }}{% if item.summary | length > 240 %}…{% endif %}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% if news_total > news | length %}<p class="meta-text">+{{ news_total - news | length }} more news items</p>{% endif %}
+</section>
+{% endif %}
+
 {# ---- Citations footer ---- #}
 {% if citations %}
-<section class="citations">
+<section class="citations" id="citations">
   <h2>Citations · {{ citations | length }} of {{ total_sources }} sources referenced on this page</h2>
   <ol class="cite-list">
     {% for c in citations %}
