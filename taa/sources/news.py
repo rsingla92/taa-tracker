@@ -91,15 +91,21 @@ async def fetch(antigen: Antigen, citation_id_start: int = 1) -> NewsResult:
 
     items, citations = _normalize(all_items, citation_id_start, attempt_at)
 
-    error_str = "; ".join(feed_errors) if feed_errors else None
+    # News is "stale" only if ALL feeds failed and zero items returned. Partial
+    # feed failure with at least one item is success — the section has fresh data.
+    error_str = (
+        ("partial: " + "; ".join(feed_errors)) if feed_errors and items
+        else "; ".join(feed_errors) if feed_errors and not items
+        else None
+    )
     return NewsResult(
         items=items,
         citations=citations,
         freshness=SourceFreshness(
             source="news",
-            last_success=attempt_at if items or not feed_errors else None,
+            last_success=attempt_at if items else None,
             last_attempt=attempt_at,
-            error=error_str,
+            error=error_str if not items else None,  # only flag stale if no items
         ),
     )
 

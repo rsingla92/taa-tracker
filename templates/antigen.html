@@ -19,12 +19,13 @@
   <h1 class="hero-name">{{ antigen.primary_name }}</h1>
   <div class="hero-meta">
     {% for alias in antigen.aliases %}
-      <span class="alias">{{ alias }}</span>
+      <span class="id-chip"><span class="id-chip-label">alias</span><span class="id-chip-value">{{ alias }}</span></span>
     {% endfor %}
-    {% if antigen.uniprot_id %}<span class="alias">UniProt {{ antigen.uniprot_id }}</span>{% endif %}
-    {% if antigen.hgnc_symbol %}<span class="alias">HGNC {{ antigen.hgnc_symbol }}</span>{% endif %}
+    {% if antigen.uniprot_id %}<span class="id-chip"><span class="id-chip-label">uniprot</span><span class="id-chip-value">{{ antigen.uniprot_id }}</span></span>{% endif %}
+    {% if antigen.hgnc_symbol %}<span class="id-chip"><span class="id-chip-label">hgnc</span><span class="id-chip-value">{{ antigen.hgnc_symbol }}</span></span>{% endif %}
+    {% if antigen.ensembl_id %}<span class="id-chip"><span class="id-chip-label">ensembl</span><span class="id-chip-value">{{ antigen.ensembl_id }}</span></span>{% endif %}
     {% if antigen.indication_tags %}
-      <span class="meta-text">Indications: {{ antigen.indication_tags | join(', ') }}</span>
+      <span class="hero-indications"><span class="hero-indications-label">Indications</span> {{ antigen.indication_tags | join(' · ') }}</span>
     {% endif %}
   </div>
 
@@ -56,7 +57,7 @@
   <div class="toc-row">
     <span class="toc-label">Sections</span>
     {% if synth and synth.paragraphs %}<a href="#synthesis" class="toc-link">Story</a>{% endif %}
-    {% if tpp %}<a href="#tpp" class="toc-link toc-link-tpp">TPP benchmark</a>{% endif %}
+    {% if tpp %}<a href="#tpp" class="toc-link">TPP benchmark</a>{% endif %}
     {% if open_targets %}<a href="#biology" class="toc-link">Biology</a>{% endif %}
     {% if fda_approvals or ema_approvals %}<a href="#approvals" class="toc-link">Approvals <span class="toc-count">{{ fda_approvals|length + ema_approvals|length }}</span></a>{% endif %}
     {% if abstracts %}<a href="#abstracts" class="toc-link">Abstracts <span class="toc-count">{{ abstract_count }}</span></a>{% endif %}
@@ -269,15 +270,15 @@
       <span class="modality-count">{{ group | length }} program{% if group | length != 1 %}s{% endif %}</span>
     </div>
 
-    <table class="programs">
+    <table class="programs sortable" data-sortable>
       <thead>
         <tr>
-          <th>Drug</th>
-          <th style="width: 280px;">Sponsors</th>
-          <th style="width: 70px;">Trials</th>
-          <th style="width: 90px;">Phase</th>
-          <th style="width: 100px;">Status</th>
-          <th style="width: 110px;">Updated</th>
+          <th data-sort="text">Drug</th>
+          <th data-sort="text" style="width: 280px;">Sponsors</th>
+          <th data-sort="number" style="width: 80px;">Trials</th>
+          <th data-sort="phase" style="width: 100px;">Phase</th>
+          <th data-sort="text" style="width: 110px;">Status</th>
+          <th data-sort="date" style="width: 120px;">Updated</th>
           <th style="width: 110px;">Cite</th>
         </tr>
       </thead>
@@ -290,10 +291,10 @@
             {% set rest = program.sponsors | length - top | length %}
             {{ top | join(' · ') }}{% if rest > 0 %} <span class="meta-text">+{{ rest }} more</span>{% endif %}
           </td>
-          <td class="tnum">{{ program.trial_count }}</td>
-          <td><span class="phase-pill phase-{{ program.most_advanced_phase | replace('/', '-') }}">{{ program.most_advanced_phase }}</span></td>
+          <td class="tnum" data-sort-value="{{ program.trial_count }}">{{ program.trial_count }}</td>
+          <td data-sort-value="{{ program.most_advanced_phase }}"><span class="phase-pill phase-{{ program.most_advanced_phase | replace('/', '-') }}">{{ program.most_advanced_phase }}</span></td>
           <td class="status-{{ program.status }}">{{ program.status }}</td>
-          <td class="tnum">{{ program.latest_update.isoformat() if program.latest_update else '—' }}</td>
+          <td class="tnum" data-sort-value="{{ program.latest_update.isoformat() if program.latest_update else '0000-00-00' }}">{{ program.latest_update.isoformat() if program.latest_update else '—' }}</td>
           <td class="cite-cell">
             {% for cid in program.citation_ids %}<a class="cite" href="#cite-{{ cid }}">[{{ cid }}]</a>{% endfor %}
           </td>
@@ -397,7 +398,13 @@
 {# ---- Citations footer ---- #}
 {% if citations %}
 <section class="citations" id="citations">
-  <h2>Citations · {{ citations | length }} of {{ total_sources }} sources referenced on this page</h2>
+  <h2>Citations</h2>
+  <p class="citations-subtitle meta-text">
+    Showing the <strong>{{ citations | length }}</strong> source{% if citations | length != 1 %}s{% endif %}
+    cited inline above.
+    Underlying dataset for {{ antigen.primary_name }}: <strong>{{ total_sources }}</strong> records pulled from
+    {{ freshness | length }} sources (CT.gov, PubMed, OpenAlex, EDGAR, Open Targets, news, FDA, EMA, abstracts).
+  </p>
   <ol class="cite-list">
     {% for c in citations %}
     <li id="cite-{{ c.id }}">

@@ -12,7 +12,21 @@
 </head>
 <body>
 <header class="app-header">
-  <a class="wordmark" href="/">tracker</a>
+  <a class="wordmark" href="/" aria-label="TAA Tracker home">
+    <svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+      <!-- Antibody Y-shape: stylized IgG with antigen binding site marked -->
+      <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Y branches (Fab arms) -->
+        <path d="M9 6 L16 16 L23 6" />
+        <!-- Y stem (Fc tail) -->
+        <path d="M16 16 L16 26" />
+      </g>
+      <!-- Antigen target dots at the binding sites -->
+      <circle cx="9" cy="6" r="2.6" fill="var(--active)" />
+      <circle cx="23" cy="6" r="2.6" fill="var(--active)" />
+    </svg>
+    <span class="wordmark-text"><span class="wordmark-taa">TAA</span> Tracker</span>
+  </a>
   <span class="as-of">as of {{ generated_at.strftime('%Y-%m-%d') if generated_at else '' }}</span>
   <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">light / dark</button>
 </header>
@@ -38,6 +52,65 @@
       const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
       document.documentElement.dataset.theme = next;
       localStorage.setItem(KEY, next);
+    });
+  })();
+
+  // Sortable program tables — vanilla JS, no dependencies.
+  // Click a column header → sort by that column. Re-click toggles asc/desc.
+  // Sort type from data-sort attr: text | number | date | phase
+  (function () {
+    const PHASE_RANK = {
+      'approved': 7, '3': 6, '2/3': 5, '2': 4, '1/2': 3, '1': 2,
+      'preclinical': 1, 'unknown': 0,
+    };
+
+    function valueFor(row, colIndex, sortType) {
+      const cell = row.children[colIndex];
+      if (!cell) return '';
+      const raw = cell.dataset.sortValue ?? cell.textContent.trim();
+      if (sortType === 'number') return parseFloat(raw) || 0;
+      if (sortType === 'date') return Date.parse(raw) || 0;
+      if (sortType === 'phase') return PHASE_RANK[raw.toLowerCase()] ?? -1;
+      return raw.toLowerCase();
+    }
+
+    function sortTable(table, colIndex, sortType, direction) {
+      const tbody = table.querySelector('tbody');
+      if (!tbody) return;
+      const rows = Array.from(tbody.children);
+      rows.sort((a, b) => {
+        const va = valueFor(a, colIndex, sortType);
+        const vb = valueFor(b, colIndex, sortType);
+        if (va < vb) return direction === 'asc' ? -1 : 1;
+        if (va > vb) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    }
+
+    document.querySelectorAll('table[data-sortable]').forEach(table => {
+      const headers = table.querySelectorAll('thead th');
+      headers.forEach((th, i) => {
+        const sortType = th.dataset.sort;
+        if (!sortType) return;  // not sortable
+        th.classList.add('sortable-header');
+        th.tabIndex = 0;
+        th.setAttribute('role', 'button');
+        let direction = sortType === 'date' || sortType === 'number' || sortType === 'phase' ? 'desc' : 'asc';
+        const handler = () => {
+          // Reset other headers' indicators
+          headers.forEach(other => {
+            if (other !== th) other.removeAttribute('data-sort-direction');
+          });
+          th.dataset.sortDirection = direction;
+          sortTable(table, i, sortType, direction);
+          direction = direction === 'asc' ? 'desc' : 'asc';
+        };
+        th.addEventListener('click', handler);
+        th.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }
+        });
+      });
     });
   })();
 </script>

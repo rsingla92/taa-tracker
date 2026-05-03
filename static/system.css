@@ -52,8 +52,8 @@ body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -78,26 +78,36 @@ a:hover { border-color: var(--accent); }
   box-shadow: 0 1px 0 rgba(0,0,0,0.02);
 }
 .wordmark {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 18px;
-  letter-spacing: -0.01em;
-  font-variation-settings: "opsz" 18;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--text);
   border: none;
 }
-.wordmark::after {
-  content: "TAA";
+.logo-mark {
+  color: var(--text);
+  flex-shrink: 0;
+}
+.wordmark-text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  font-variation-settings: "opsz" 18;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.wordmark-taa {
   background: var(--text);
   color: var(--bg);
   font-family: var(--font-body);
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   padding: 2px 6px;
-  margin-left: 8px;
   border-radius: 2px;
-  vertical-align: 3px;
+  vertical-align: 1px;
 }
 .as-of {
   font-size: 13px;
@@ -161,6 +171,50 @@ section + section { margin-top: 64px; }
   border: 1px solid var(--border);
   padding: 2px 8px;
   border-radius: 2px;
+}
+/* ID chips with split label/value — clearer than "UniProt P04626" run-together */
+.id-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1;
+}
+.id-chip-label {
+  background: var(--bg);
+  color: var(--muted);
+  padding: 5px 8px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-right: 1px solid var(--border);
+  display: flex; align-items: center;
+}
+.id-chip-value {
+  background: var(--surface);
+  color: var(--text);
+  padding: 5px 9px 4px;
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+  font-weight: 500;
+  display: flex; align-items: center;
+}
+.hero-indications {
+  font-size: 13px;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-indications-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 /* ===== Cross-cut grid (the visual hero moment) ===== */
@@ -274,7 +328,7 @@ section + section { margin-top: 64px; }
 table.programs {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 15px;
 }
 table.programs th {
   text-align: left;
@@ -286,6 +340,25 @@ table.programs th {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border-strong);
 }
+table.programs th.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 22px;
+  transition: color 100ms ease-out;
+}
+table.programs th.sortable-header:hover { color: var(--text); }
+table.programs th.sortable-header::after {
+  content: "↕";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.3;
+  font-size: 10px;
+}
+table.programs th[data-sort-direction="asc"]::after { content: "↑"; opacity: 1; color: var(--accent); }
+table.programs th[data-sort-direction="desc"]::after { content: "↓"; opacity: 1; color: var(--accent); }
 table.programs td {
   padding: 12px;
   border-bottom: 1px solid var(--border);
@@ -308,14 +381,15 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   border-radius: 2px;
   border: 1px solid currentColor;
 }
-.phase-approved { color: var(--success); }
-.phase-3 { color: var(--text); }
-.phase-2-3 { color: var(--text); }
-.phase-2 { color: var(--text); }
-.phase-1-2 { color: var(--muted); }
-.phase-1 { color: var(--muted); }
-.phase-preclinical { color: var(--muted); }
-.phase-unknown { color: var(--muted); }
+/* Phase color ramp — later phase = stronger color, matches modality palette */
+.phase-approved   { color: var(--success); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.phase-3          { color: var(--active);  background: color-mix(in srgb, var(--active) 8%, var(--surface)); }
+.phase-2-3        { color: var(--m-bisp);  background: color-mix(in srgb, var(--m-bisp) 8%, var(--surface)); }
+.phase-2          { color: var(--m-bisp);  background: color-mix(in srgb, var(--m-bisp) 6%, var(--surface)); }
+.phase-1-2        { color: var(--m-cart);  background: color-mix(in srgb, var(--m-cart) 8%, var(--surface)); }
+.phase-1          { color: var(--m-cart);  background: color-mix(in srgb, var(--m-cart) 6%, var(--surface)); }
+.phase-preclinical { color: var(--muted); background: var(--surface); }
+.phase-unknown    { color: var(--muted); background: var(--surface); border-style: dashed; }
 
 .status-active::before { content: "● "; color: var(--success); }
 .status-completed::before { content: "● "; color: var(--accent); }
@@ -364,7 +438,7 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   padding: 2px 0;
 }
 .page-toc .toc-link:hover { color: var(--accent); }
-.page-toc .toc-link-tpp { color: var(--active); font-weight: 500; }
+/* TPP TOC link kept as a normal link; no accent color (was confusing — implied active state) */
 .page-toc .toc-link-modality { font-family: var(--font-display); font-weight: 500; font-size: 14px; }
 .page-toc .toc-count {
   font-family: var(--font-mono);
@@ -682,7 +756,7 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   margin: 0 0 24px;
 }
 .synthesis p {
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.65;
   color: var(--text);
   margin: 0 0 1.2em;
@@ -719,10 +793,17 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   border-top: 1px solid var(--border-strong);
 }
 .citations h2 {
-  font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--muted);
-  margin: 0 0 16px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  font-variation-settings: "opsz" 36;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.citations-subtitle {
+  font-size: 13px !important;
+  margin: 0 0 24px !important;
+  max-width: 720px;
 }
 .cite-list {
   list-style: none; padding: 0; margin: 0;
@@ -771,6 +852,75 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
 }
 
 /* ===== Responsive ===== */
+/* ===== Print stylesheet ===== */
+@media print {
+  /* Force light theme + maximum contrast */
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --text: #000000;
+    --muted: #4a4a4a;
+    --border: #d0d0d0;
+    --border-strong: #888888;
+    --accent: #000000;
+    --active: #7a1f15;
+  }
+
+  /* Hide chrome that has no place on paper */
+  .app-header { position: static; box-shadow: none; }
+  .theme-toggle, .as-of { display: none; }
+  .page-toc { display: none; }  /* TOC anchors useless on paper */
+  .stale-banner { display: none; }
+  .news, .abstracts { display: none; }  /* low signal-to-print-cost on paper */
+  .app-footer { font-size: 10px; }
+
+  /* Maximize content width */
+  .shell { max-width: 100%; padding: 0 0 32px; }
+  body { font-size: 11pt; line-height: 1.4; color: #000; background: #fff; }
+
+  /* Hero */
+  .hero { margin-top: 16px; padding-top: 16px; border-top-width: 1pt; page-break-after: avoid; }
+  .hero-name { font-size: 36pt; }
+  .id-chip { border-color: #888; }
+  .id-chip-label { background: #f4f4f4; color: #333; }
+
+  /* Cross-cut grid stays visible */
+  .crosscut { background: transparent; border: 1px solid #888; page-break-inside: avoid; }
+
+  /* TPP — keep on its own page if possible */
+  .tpp { background: transparent; border: 1px solid #888; border-left: 3px solid #7a1f15; page-break-inside: avoid; }
+  .tpp h2 { font-size: 16pt; }
+  .tpp-table th.tpp-section-row { background: #f4f4f4; }
+
+  /* Synthesis as readable prose */
+  .synthesis { page-break-inside: avoid; }
+  .synthesis p { font-size: 11pt; line-height: 1.45; }
+
+  /* Tables — show all data, smaller font, allow row breaks */
+  table.programs { font-size: 9pt; page-break-inside: auto; }
+  table.programs th { background: #f4f4f4; }
+  table.programs th.sortable-header { cursor: default; padding-right: 12px; }
+  table.programs th.sortable-header::after { display: none; }
+  table.programs tr { page-break-inside: avoid; }
+  .modality-block { page-break-inside: auto; }
+  .modality-head { page-break-after: avoid; }
+
+  /* Inline citations stay subtle */
+  .cite { color: #555; }
+  .cite:hover { background: transparent; color: #555; }
+
+  /* Show URLs after links so the reader can find sources offline */
+  .citations a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+    color: #666;
+    word-break: break-all;
+  }
+
+  /* No background tints; use borders instead */
+  .phase-pill { background: transparent !important; border-width: 1pt; }
+}
+
 @media (max-width: 900px) {
   .shell { padding: 0 16px 64px; }
   .app-header { padding: 12px 16px; gap: 16px; }
