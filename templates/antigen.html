@@ -56,7 +56,7 @@
   <h2>The {{ antigen.primary_name }} story right now</h2>
   {% for para in synth.paragraphs %}
   <p>
-    {% for sent in para.sentences %}{{ sent.text }}{% for cid in sent.citation_ids %}<a class="cite" href="#cite-{{ cid }}">[{{ cid }}]</a>{% endfor %}{% if not loop.last %} {% endif %}{% endfor %}
+    {% for sent in para.sentences %}{{ sent.text }}<span class="cite-cluster">{% for cid in sent.citation_ids %}<a class="cite" href="#cite-{{ cid }}">[{{ cid }}]</a>{% if not loop.last %} {% endif %}{% endfor %}</span>{% if not loop.last %} {% endif %}{% endfor %}
   </p>
   {% endfor %}
   <p class="synthesis-foot meta-text">Synthesized from the structured data above. Every claim cites a source. <a href="https://github.com/rsingla92/taa-tracker">Methodology →</a></p>

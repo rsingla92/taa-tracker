@@ -177,16 +177,25 @@ async def synthesize(data: AntigenData) -> SynthOutput | None:
     return synth
 
 
+CITATIONS_PER_SENTENCE_CAP = 4
+
+
 def validate_against_citations(
     synth: SynthOutput, valid_citation_ids: set[int]
 ) -> SynthOutput:
-    """Drop sentences with orphan citation_ids; drop paragraphs that empty out.
+    """Drop sentences with orphan citation_ids; cap visible cites per sentence.
 
-    Returns a filtered copy. Logs a warning per orphan sentence so prompt
-    regressions are visible at build time without failing the build.
+    Two transformations:
+    1. Drop any citation_id not in the valid set (orphan; renderer warns).
+    2. Cap remaining citation_ids per sentence to CITATIONS_PER_SENTENCE_CAP.
+       The model often cites every source supporting a claim (good — we want
+       grounding) but rendering 30+ inline marks per sentence is unreadable.
+       The cap keeps the visible cite cluster small; the full citations footer
+       still surfaces every referenced source.
     """
     cleaned_paragraphs = []
     dropped = 0
+    capped = 0
     for para in synth.paragraphs:
         kept_sentences = []
         for sent in para.sentences:
@@ -194,13 +203,20 @@ def validate_against_citations(
             if not valid_ids:
                 dropped += 1
                 continue
-            kept_sentences.append(
-                sent.model_copy(update={"citation_ids": valid_ids})
-            )
+            if len(valid_ids) > CITATIONS_PER_SENTENCE_CAP:
+                capped += 1
+                valid_ids = valid_ids[:CITATIONS_PER_SENTENCE_CAP]
+            kept_sentences.append(sent.model_copy(update={"citation_ids": valid_ids}))
         if kept_sentences:
             cleaned_paragraphs.append(para.model_copy(update={"sentences": kept_sentences}))
 
     if dropped:
         print(f"  [synth] dropped {dropped} sentence(s) with orphan citation_ids", file=sys.stderr)
+    if capped:
+        print(
+            f"  [synth] capped citation list on {capped} sentence(s) "
+            f"(showing first {CITATIONS_PER_SENTENCE_CAP} of N)",
+            file=sys.stderr,
+        )
 
     return SynthOutput(paragraphs=cleaned_paragraphs)

@@ -344,6 +344,12 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   color: var(--text);
   margin: 0 0 1.2em;
 }
+.synthesis .cite-cluster {
+  margin-left: 4px;
+  white-space: nowrap;
+  display: inline-block;
+}
+.synthesis .cite { margin-right: 1px; }
 .synthesis-foot {
   font-size: 12px !important;
   margin-top: 24px !important;
