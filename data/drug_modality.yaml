@@ -5,6 +5,9 @@
 # "Trastuzumab deruxtecan", "DS-8201a", etc. Catching ANY of those forms is enough.
 #
 # Unknown drugs default to "other" modality and get surfaced by bin/audit-matches.
+#
+# Order: ADC before mAb so "trastuzumab deruxtecan" matches as ADC, not mAb.
+# Bispecific before mAb for the same reason.
 
 adc:
   # HER2-targeting ADCs
@@ -23,15 +26,16 @@ adc:
   - "ARX788"
   - "MRG002"
   - "BB-1701"
-
-mab:
-  # HER2-targeting mAbs
-  - "trastuzumab"  # bare trastuzumab without deruxtecan/duocarmazine prefix
-  - "Herceptin"
-  - "pertuzumab"
-  - "Perjeta"
-  - "margetuximab"
-  - "Margenza"
+  # BCMA-targeting ADCs
+  - "belantamab mafodotin"
+  - "GSK2857916"
+  - "Blenrep"
+  # CLDN18.2-targeting ADCs
+  - "CMG901"
+  - "AZD0901"
+  - "TST001"  # also bispecific candidate, ordered ADC-first
+  - "LM-302"
+  - "RC118"
 
 bispecific:
   # HER2-targeting bispecifics
@@ -42,11 +46,48 @@ bispecific:
   - "GEN1046"
   - "ZW49"
   - "ABBV-400"
+  # BCMA-targeting bispecifics
+  - "teclistamab"
+  - "Tecvayli"
+  - "elranatamab"
+  - "Elrexfio"
+  - "linvoseltamab"
+  - "ABBV-383"
+  # CLDN18.2-targeting bispecifics
+  - "AZD5863"
+  - "Q-1802"
 
 car-t:
+  # Generic markers
   - "CAR-T"
   - "CAR T"
   - "chimeric antigen receptor"
+  # BCMA CAR-Ts
+  - "ciltacabtagene"
+  - "Carvykti"
+  - "idecabtagene"
+  - "Abecma"
+  - "JCARH125"
+  - "orva-cel"
+  - "ARI-0002h"
+  - "GC012F"
+  - "BMS-986393"  # GPRC5D, listed for completeness
+  # CLDN18.2 CAR-Ts
+  - "CT041"
+  - "satricabtagene autoleucel"
+
+mab:
+  # HER2-targeting mAbs (after ADCs/bispecifics so trastuzumab deruxtecan etc don't match here)
+  - "trastuzumab"
+  - "Herceptin"
+  - "pertuzumab"
+  - "Perjeta"
+  - "margetuximab"
+  - "Margenza"
+  # CLDN18.2 mAbs
+  - "zolbetuximab"
+  - "Vyloy"
+  - "IMAB362"
 
 vaccine:
   - "vaccine"
@@ -55,6 +96,8 @@ vaccine:
   - "GP2"
   - "E75"
   - "AE37"
+  # CLDN18.2 vaccines
+  - "BNT211"  # arguably CAR-T but BNT often calls it cell therapy / tumor vaccine
 
 radioligand:
   - "radioligand"

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}TAA Tracker — tumour-associated antigen scorecards{% endblock %}
+{% block description %}Modality cross-cut competitive intelligence for tumour-associated antigens. Open, free, citation-grounded.{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-eyebrow">Tumour-Associated Antigens</div>
+  <h1 class="hero-name" style="font-size: 64px;">Antigen index</h1>
+  <div class="hero-meta">
+    <span class="meta-text">{{ antigens | length }} antigen{% if antigens | length != 1 %}s{% endif %} tracked · refreshed weekly · open-source</span>
+  </div>
+</section>
+
+<section style="margin-top: 48px;">
+  <table class="programs">
+    <thead>
+      <tr>
+        <th>Antigen</th>
+        <th>Aliases</th>
+        <th style="width: 90px;">Programs</th>
+        <th style="width: 220px;">Top modalities</th>
+        <th style="width: 110px;">Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in antigens %}
+      <tr>
+        <td><a href="/{{ d.antigen.slug }}.html"><strong>{{ d.antigen.primary_name }}</strong></a></td>
+        <td class="meta-text">{{ d.antigen.aliases | join(', ') }}</td>
+        <td class="tnum">{{ d.programs | length }}</td>
+        <td class="meta-text">
+          {% set top = modality_summary_for(d)[:3] %}
+          {% for s in top %}{{ modality_label[s.modality] }} ({{ s.count }}){% if not loop.last %} · {% endif %}{% endfor %}
+        </td>
+        <td class="tnum">{{ d.generated_at.strftime('%Y-%m-%d') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

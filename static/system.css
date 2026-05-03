@@ -326,6 +326,31 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
 .status-unknown::before { content: "○ "; color: var(--muted); }
 .status-unknown { color: var(--muted); }
 
+/* ===== Synthesis paragraph (LLM narrative, citation-grounded) ===== */
+.synthesis {
+  margin-top: 64px;
+  max-width: 760px;
+}
+.synthesis h2 {
+  font-family: var(--font-body);
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+.synthesis p {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--text);
+  margin: 0 0 1.2em;
+}
+.synthesis-foot {
+  font-size: 12px !important;
+  margin-top: 24px !important;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 /* ===== Citation marks + footer ===== */
 .cite {
   font-family: var(--font-mono);

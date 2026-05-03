@@ -1,17 +1,17 @@
-# Curated TAA universe — v0.1 ships with HER2 only as the vertical-slice proof.
-# Add more antigens by appending entries with the same shape.
+# Curated TAA universe — 3 antigens for v0.2 (HER2 + BCMA + CLDN18.2).
+# All three are heavily-trafficked targets with diverse modality coverage,
+# good stress-test for the cross-cut grid + canonical-drug rollup logic.
 #
-# Per-antigen exclude_terms filter false positives from the CT.gov / PubMed query
-# (e.g., "CD3" alone matches every T-cell engager — we'd add "CD3 engager" to
-# excludes for an antigen we want to track only as a TAA target).
+# Per-antigen exclude_terms filter false positives from CT.gov / PubMed alias
+# matching (e.g., short aliases like "NEU" or "CD3" that match unrelated
+# trials need explicit exclude rules; long unambiguous aliases like "ERBB2"
+# don't).
 
 - slug: her2
   primary_name: HER2
   aliases:
     - ERBB2
     - CD340
-  # Note: dropped "NEU" alias — too lossy (matches neurology, neuroendocrine,
-  # neutropenia etc.). The "CD3 problem" anticipated in the design doc, in the wild.
   uniprot_id: P04626
   hgnc_symbol: ERBB2
   indication_tags:
@@ -21,7 +21,41 @@
     - colorectal
     - urothelial
   notes: >
-    The most heavily-trafficked TAA in oncology. Anchor antigen for the v0.1
-    vertical slice — high data volume across modalities lets us exercise the
-    cross-cut grid, table density, and citation rendering at realistic scale.
+    The most heavily-trafficked TAA in oncology. Anchor antigen for v0.1 vertical
+    slice. Note: dropped "NEU" alias (matches neurology / neuroendocrine /
+    neutropenia trials).
+  exclude_terms: []
+
+- slug: bcma
+  primary_name: BCMA
+  aliases:
+    - TNFRSF17
+    - CD269
+  uniprot_id: Q02223
+  hgnc_symbol: TNFRSF17
+  indication_tags:
+    - multiple myeloma
+    - heme
+  notes: >
+    Multiple myeloma antigen. Two approved CAR-Ts (Carvykti, Abecma) plus a
+    bispecific (Tecvayli/teclistamab); ADC and second-gen CAR-T tier emerging.
+    Test of the per-modality breakdown when CAR-T leads.
+  exclude_terms: []
+
+- slug: cldn18-2
+  primary_name: CLDN18.2
+  aliases:
+    - Claudin 18.2
+    - Claudin-18.2
+    - CLDN18A2
+  uniprot_id: P56856
+  hgnc_symbol: CLDN18
+  indication_tags:
+    - gastric
+    - pancreatic
+    - GEJ
+  notes: >
+    Hot target since zolbetuximab (Astellas mAb) approval in 2024-2025.
+    Tests the system on a younger landscape — fewer canonical drugs but
+    growing fast. Bispecific + ADC + CAR-T tiers still developing.
   exclude_terms: []

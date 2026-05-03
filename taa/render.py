@@ -6,7 +6,7 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from taa.schema import AntigenData, Modality, Phase, Program
+from taa.schema import AntigenData, Modality, Phase, Program, SynthOutput
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
@@ -54,18 +54,31 @@ def make_env() -> Environment:
     )
 
 
-def render_antigen(data: AntigenData, env: Environment | None = None) -> str:
+def render_antigen(
+    data: AntigenData,
+    env: Environment | None = None,
+    synth: SynthOutput | None = None,
+) -> str:
     """Render one antigen scorecard page.
 
-    The citations footer shows ONLY citations actually referenced by a Program
-    on the page (per-program cap of 6 citations is set in normalize.py). Otherwise
-    the footer would balloon to thousands of NCT entries from the raw fetch.
+    The citations footer shows citations referenced by either a Program OR a
+    synthesis sentence (synthesis sentences validated against citations in
+    taa.synth.validate_against_citations before reaching here).
     """
     env = env or make_env()
     tmpl = env.get_template("antigen.html")
-    referenced_ids = {cid for p in data.programs for cid in p.citation_ids}
-    visible_citations = [c for c in data.citations if c.id in referenced_ids]
-    visible_citations.sort(key=lambda c: c.id)
+
+    # Collect every citation_id actually referenced on the page
+    referenced_ids: set[int] = {cid for p in data.programs for cid in p.citation_ids}
+    if synth:
+        for para in synth.paragraphs:
+            for sent in para.sentences:
+                referenced_ids.update(sent.citation_ids)
+
+    visible_citations = sorted(
+        (c for c in data.citations if c.id in referenced_ids), key=lambda c: c.id
+    )
+
     return tmpl.render(
         antigen=data.antigen,
         programs=data.programs,
@@ -76,13 +89,20 @@ def render_antigen(data: AntigenData, env: Environment | None = None) -> str:
         modality_label=MODALITY_LABEL,
         modality_order=MODALITY_ORDER,
         total_sources=len(data.citations),
+        synth=synth,
+        paper_count=len(data.papers),
+        filing_count=len(data.filings),
     )
 
 
 def render_index(antigens: list[AntigenData], env: Environment | None = None) -> str:
     env = env or make_env()
     tmpl = env.get_template("index.html")
-    return tmpl.render(antigens=antigens)
+    return tmpl.render(
+        antigens=antigens,
+        modality_summary_for=lambda d: _summarize_modalities(d.programs),
+        modality_label=MODALITY_LABEL,
+    )
 
 
 def _summarize_modalities(programs: list[Program]) -> list[dict[str, Any]]:

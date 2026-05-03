@@ -155,3 +155,28 @@ class AntigenData(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
     freshness: list[SourceFreshness] = Field(default_factory=list)
     generated_at: datetime
+
+
+# ---- Synthesis output (LLM, structured-output contract) -----------------------
+
+
+class SynthSentence(BaseModel):
+    """One sentence of the synthesis paragraph. Every sentence MUST cite at least
+    one citation_id, validated by the renderer. Sentences with orphan or empty
+    citations are dropped before render (per /plan-eng-review decision)."""
+
+    text: str
+    citation_ids: list[int] = Field(min_length=1)
+
+
+class SynthParagraph(BaseModel):
+    sentences: list[SynthSentence]
+
+
+class SynthOutput(BaseModel):
+    """Structured synthesis. The LLM returns this JSON; the renderer assembles
+    the prose deterministically and emits citation marks as a function of the
+    citation_ids array. Free-prose output is rejected at the Pydantic boundary.
+    """
+
+    paragraphs: list[SynthParagraph]

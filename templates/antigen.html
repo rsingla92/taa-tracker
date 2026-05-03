@@ -31,7 +31,7 @@
   {# ---- Modality cross-cut grid (the visual hero moment) ---- #}
   <div class="crosscut">
     <div class="crosscut-title">
-      <span>Modality landscape — {{ programs | length }} programs across {{ modality_summary | length }} modalities</span>
+      <span>Modality landscape — {{ programs | length }} programs across {{ modality_summary | length }} modalities · {{ paper_count }} recent papers · {{ filing_count }} SEC filings</span>
       <span class="crosscut-legend">programs · most-advanced phase</span>
     </div>
 
@@ -49,6 +49,19 @@
     {% endfor %}
   </div>
 </section>
+
+{# ---- Synthesis (LLM narrative, citation-grounded) ---- #}
+{% if synth and synth.paragraphs %}
+<section class="synthesis">
+  <h2>The {{ antigen.primary_name }} story right now</h2>
+  {% for para in synth.paragraphs %}
+  <p>
+    {% for sent in para.sentences %}{{ sent.text }}{% for cid in sent.citation_ids %}<a class="cite" href="#cite-{{ cid }}">[{{ cid }}]</a>{% endfor %}{% if not loop.last %} {% endif %}{% endfor %}
+  </p>
+  {% endfor %}
+  <p class="synthesis-foot meta-text">Synthesized from the structured data above. Every claim cites a source. <a href="https://github.com/rsingla92/taa-tracker">Methodology →</a></p>
+</section>
+{% endif %}
 
 {# ---- Per-modality tables ---- #}
 {% for modality_key in modality_order %}
