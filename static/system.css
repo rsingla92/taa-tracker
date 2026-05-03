@@ -326,27 +326,36 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
 .status-unknown::before { content: "○ "; color: var(--muted); }
 .status-unknown { color: var(--muted); }
 
-/* ===== Modality TOC (jump-nav after the cross-cut grid) ===== */
-.modality-toc {
+/* ===== Page TOC (sections row + modality programs row) ===== */
+.page-toc {
   margin-top: 24px;
-  padding: 14px 20px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 2px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-  align-items: center;
   font-size: 13px;
 }
-.modality-toc .toc-label {
-  font-size: 11px;
+.page-toc .toc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 14px 20px;
+  padding: 12px 20px;
+}
+.page-toc .toc-row + .toc-row {
+  border-top: 1px solid var(--border);
+}
+.page-toc .toc-row-modalities {
+  background: var(--bg);
+}
+.page-toc .toc-label {
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
+  min-width: 64px;
 }
-.modality-toc .toc-link {
+.page-toc .toc-link {
   border: none;
   color: var(--text);
   display: inline-flex;
@@ -354,8 +363,16 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   gap: 6px;
   padding: 2px 0;
 }
-.modality-toc .toc-link:hover { color: var(--accent); }
-.modality-toc .toc-link-tpp { color: var(--active); font-weight: 500; }
+.page-toc .toc-link:hover { color: var(--accent); }
+.page-toc .toc-link-tpp { color: var(--active); font-weight: 500; }
+.page-toc .toc-link-modality { font-family: var(--font-display); font-weight: 500; font-size: 14px; }
+.page-toc .toc-count {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 2px;
+}
 .toc-swatch {
   width: 10px;
   height: 10px;

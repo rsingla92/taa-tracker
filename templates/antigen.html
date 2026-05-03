@@ -50,22 +50,41 @@
   </div>
 </section>
 
-{# ---- Modality TOC ---- #}
+{# ---- Page TOC ---- #}
 {% if modality_summary %}
-<nav class="modality-toc" aria-label="Programs by modality">
-  <span class="toc-label">Jump to</span>
-  {% for row in modality_summary %}
-    <a href="#modality-{{ row.modality }}" class="toc-link">
-      <span class="toc-swatch swatch-{{ row.modality }}"></span>{{ row.label }} <span class="meta-text">({{ row.count }})</span>
-    </a>
-  {% endfor %}
-  {% if tpp %}<a href="#tpp" class="toc-link toc-link-tpp">TPP benchmark</a>{% endif %}
-  {% if open_targets %}<a href="#biology" class="toc-link">Biology</a>{% endif %}
-  {% if fda_approvals or ema_approvals %}<a href="#approvals" class="toc-link">Approvals ({{ fda_approvals|length + ema_approvals|length }})</a>{% endif %}
-  {% if abstracts %}<a href="#abstracts" class="toc-link">Abstracts ({{ abstract_count }})</a>{% endif %}
-  {% if news %}<a href="#news" class="toc-link">News ({{ news | length }})</a>{% endif %}
-  <a href="#citations" class="toc-link">Citations</a>
+<nav class="page-toc" aria-label="Page sections">
+  <div class="toc-row">
+    <span class="toc-label">Sections</span>
+    {% if synth and synth.paragraphs %}<a href="#synthesis" class="toc-link">Story</a>{% endif %}
+    {% if tpp %}<a href="#tpp" class="toc-link toc-link-tpp">TPP benchmark</a>{% endif %}
+    {% if open_targets %}<a href="#biology" class="toc-link">Biology</a>{% endif %}
+    {% if fda_approvals or ema_approvals %}<a href="#approvals" class="toc-link">Approvals <span class="toc-count">{{ fda_approvals|length + ema_approvals|length }}</span></a>{% endif %}
+    {% if abstracts %}<a href="#abstracts" class="toc-link">Abstracts <span class="toc-count">{{ abstract_count }}</span></a>{% endif %}
+    {% if news %}<a href="#news" class="toc-link">News <span class="toc-count">{{ news | length }}</span></a>{% endif %}
+    <a href="#citations" class="toc-link">Citations <span class="toc-count">{{ citations | length }}</span></a>
+  </div>
+  <div class="toc-row toc-row-modalities">
+    <span class="toc-label">Programs</span>
+    {% for row in modality_summary %}
+      <a href="#modality-{{ row.modality }}" class="toc-link toc-link-modality">
+        <span class="toc-swatch swatch-{{ row.modality }}"></span>{{ row.label }} <span class="toc-count">{{ row.count }}</span>
+      </a>
+    {% endfor %}
+  </div>
 </nav>
+{% endif %}
+
+{# ---- Synthesis (LLM narrative, citation-grounded) — first content section ---- #}
+{% if synth and synth.paragraphs %}
+<section class="synthesis" id="synthesis">
+  <h2>The {{ antigen.primary_name }} story right now</h2>
+  {% for para in synth.paragraphs %}
+  <p>
+    {% for sent in para.sentences %}{{ sent.text }}<span class="cite-cluster">{% for cid in sent.citation_ids %}<a class="cite" href="#cite-{{ cid }}">[{{ cid }}]</a>{% if not loop.last %} {% endif %}{% endfor %}</span>{% if not loop.last %} {% endif %}{% endfor %}
+  </p>
+  {% endfor %}
+  <p class="synthesis-foot meta-text">Synthesized from the structured data below. Every claim cites a source. <a href="https://github.com/rsingla92/taa-tracker">Methodology →</a></p>
+</section>
 {% endif %}
 
 {# ---- Target Product Profile (curated benchmark) ---- #}
@@ -238,18 +257,6 @@
 </section>
 {% endif %}
 
-{# ---- Synthesis (LLM narrative, citation-grounded) ---- #}
-{% if synth and synth.paragraphs %}
-<section class="synthesis">
-  <h2>The {{ antigen.primary_name }} story right now</h2>
-  {% for para in synth.paragraphs %}
-  <p>
-    {% for sent in para.sentences %}{{ sent.text }}<span class="cite-cluster">{% for cid in sent.citation_ids %}<a class="cite" href="#cite-{{ cid }}">[{{ cid }}]</a>{% if not loop.last %} {% endif %}{% endfor %}</span>{% if not loop.last %} {% endif %}{% endfor %}
-  </p>
-  {% endfor %}
-  <p class="synthesis-foot meta-text">Synthesized from the structured data above. Every claim cites a source. <a href="https://github.com/rsingla92/taa-tracker">Methodology →</a></p>
-</section>
-{% endif %}
 
 {# ---- Per-modality tables ---- #}
 {% for modality_key in modality_order %}
