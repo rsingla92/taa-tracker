@@ -92,8 +92,12 @@ def render_antigen(
         synth=synth,
         tpp=tpp,
         open_targets=data.open_targets,
-        news=data.news[:8],  # cap inline news list to top-8 most recent
+        news=data.news[:8],
         news_total=len(data.news),
+        fda_approvals=data.fda_approvals,
+        ema_approvals=data.ema_approvals,
+        abstracts=data.abstracts[:10],
+        abstract_count=len(data.abstracts),
         paper_count=len(data.papers),
         filing_count=len(data.filings),
     )

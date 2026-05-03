@@ -14,6 +14,7 @@ dependencies = [
     "anthropic>=0.40",
     "python-dotenv>=1.0",
     "ruamel.yaml>=0.18",  # preserves comments + ordering for drug_modality.yaml edits
+    "openpyxl>=3.1",  # EMA EPAR XLSX bulk download parser
 ]
 
 [project.optional-dependencies]
@@ -31,6 +32,7 @@ dev = [
 [project.scripts]
 taa-refresh = "taa.cli:refresh"
 taa-audit = "taa.cli:audit"
+taa-audit-matches = "taa.audit_matches:run"
 
 [build-system]
 requires = ["hatchling"]

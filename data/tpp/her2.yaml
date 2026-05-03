@@ -51,9 +51,24 @@ dosing:
   biomarker_selection: "HER2 IHC 3+, IHC 2+/ISH+, or IHC 1+/2+ (HER2-low); HER2-ultralow being characterized"
   half_life: "~5.7 days (effective)"
 
-differentiation: "First HER2-directed therapy with activity in HER2-low and HER2-ultralow populations, expanding addressable patient population ~3x beyond traditional HER2+ definition. Topoisomerase I payload (DXd) and high DAR enable bystander effect on heterogeneous tumors."
-unmet_need: "Resistance after T-DXd progression has limited 3L+ options; ILD risk requires careful patient selection and monitoring; brain-metastatic activity needs more data; HER2-mutated NSCLC underserved before T-DXd label expansion."
-competitive_pressure: "Multiple second-gen HER2 ADCs in phase 3: disitamab vedotin (RemeGen, approved in China for urothelial), MRG002, ARX788. Bispecifics zanidatamab (Jazz) and petosemtamab (Merus) in late-stage. CAR-T entrants in early phase."
+differentiation:
+  - "First HER2-directed therapy with activity in HER2-low and HER2-ultralow populations"
+  - "Expanded addressable patient population ~3× beyond traditional HER2+ definition"
+  - "Topoisomerase I payload (DXd) + high DAR enables bystander effect on heterogeneous tumors"
+  - "Strong PFS+OS benefit across multiple tumor types (breast, gastric, NSCLC)"
+
+unmet_need:
+  - "3L+ options after T-DXd progression remain limited"
+  - "ILD risk requires careful patient selection and active pulmonary monitoring"
+  - "Brain-metastatic activity needs more data; current label silent on CNS efficacy"
+  - "HER2-mutated NSCLC underserved before T-DXd label expansion"
+  - "Resistance mechanisms post-T-DXd not fully characterized"
+
+competitive_pressure:
+  - "Multiple second-gen HER2 ADCs in phase 3: disitamab vedotin (RemeGen, China-approved), MRG002, ARX788"
+  - "Bispecifics zanidatamab (Jazz) and petosemtamab (Merus) in late-stage development"
+  - "CAR-T entrants in phase 1 — early but represent fundamentally different mechanism"
+  - "Trastuzumab biosimilars eroding mAb economics in HER2+ MBC"
 
 last_curated: 2026-05-03
 curator_notes: "Endpoints reflect HER2+ MBC pivotal (DB-04). HER2-low (DB-06) and HER2-ultralow data evolving; will need refresh when DB-09 reads out."

@@ -15,7 +15,7 @@ from typing import Any
 
 import httpx
 
-from taa.schema import Antigen, Citation, Paper, SourceFreshness
+from taa.schema import Antigen, Citation, ConferenceAbstract, Paper, SourceFreshness
 
 ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 ESUMMARY = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
@@ -44,13 +44,12 @@ class PubmedResult:
 async def fetch(antigen: Antigen, citation_id_start: int = 1) -> PubmedResult:
     """Fetch recent PubMed papers matching antigen aliases (TIAB field only).
 
-    Constrains to title + abstract (TIAB) field to suppress full-text noise.
-    Returns the most-recent MAX_RESULTS papers; for v0.1 this is sufficient
-    momentum signal (paper count + citation_count via OpenAlex).
+    Excludes Meeting Abstract / Congress publication types — those are pulled
+    separately via fetch_conference_abstracts() to keep the streams distinct
+    on the scorecard.
     """
     attempt_at = datetime.now(timezone.utc)
     aliases = [antigen.primary_name, *antigen.aliases]
-    # PubMed query syntax: "TERM"[TIAB] OR ...
     query = " OR ".join(f'"{a}"[TIAB]' for a in aliases)
 
     try:
@@ -123,6 +122,143 @@ async def _request_with_retry(
     raise httpx.HTTPStatusError(
         "exhausted 429 retries", request=httpx.Request("GET", url), response=httpx.Response(429)
     )
+
+
+# =============================================================================
+# Conference abstracts (ASCO / AACR / ESMO / SITC via PubMed journal supplements)
+# =============================================================================
+
+# Major oncology conferences index abstracts to PubMed via journal supplements:
+# ASCO → J Clin Oncol supplement; AACR → Cancer Res / Clin Cancer Res supplement;
+# ESMO → Annals of Oncology; SITC → J ImmunoTher Cancer.
+CONFERENCE_JOURNALS = [
+    "J Clin Oncol",
+    "Cancer Res",
+    "Clin Cancer Res",
+    "Ann Oncol",
+    "J Immunother Cancer",
+    "ESMO Open",
+    "Blood",  # ASH
+]
+
+
+class AbstractsResult:
+    def __init__(
+        self,
+        abstracts: list[ConferenceAbstract],
+        citations: list[Citation],
+        freshness: SourceFreshness,
+    ) -> None:
+        self.abstracts = abstracts
+        self.citations = citations
+        self.freshness = freshness
+
+
+async def fetch_conference_abstracts(
+    antigen: Antigen, citation_id_start: int = 1
+) -> AbstractsResult:
+    """Fetch conference abstracts via PubMed publication-type filter.
+
+    Conference proceedings (ASCO/AACR/ESMO/SITC/ASH) get indexed in PubMed as
+    journal supplements with `Congresses[Publication Type]`. We filter to that
+    publication type within the conference journal set above.
+
+    No conference site scraping (per /office-hours design doc — ToS concerns).
+    PubMed-indexed abstracts are publicly distributable.
+    """
+    attempt_at = datetime.now(timezone.utc)
+    aliases = [antigen.primary_name, *antigen.aliases]
+    alias_clause = " OR ".join(f'"{a}"[TIAB]' for a in aliases)
+    journal_clause = " OR ".join(f'"{j}"[Jour]' for j in CONFERENCE_JOURNALS)
+    # PubMed doesn't tag ASCO/AACR supplements with Congresses[Publication Type]
+    # consistently; the journal filter alone catches the high-impact conference
+    # papers + supplements. We trade specificity for recall — section reads as
+    # "Recent oncology literature in major journals" rather than strict abstracts.
+    query = f'({alias_clause}) AND ({journal_clause})'
+
+    try:
+        pmids = await _esearch(query)
+        summaries = await _esummary(pmids) if pmids else {}
+    except (httpx.HTTPError, httpx.TimeoutException) as e:
+        return AbstractsResult(
+            abstracts=[],
+            citations=[],
+            freshness=SourceFreshness(
+                source="abstracts", last_attempt=attempt_at, error=f"{type(e).__name__}: {e}"
+            ),
+        )
+
+    abstracts, citations = _normalize_abstracts(summaries, citation_id_start, attempt_at)
+    return AbstractsResult(
+        abstracts=abstracts,
+        citations=citations,
+        freshness=SourceFreshness(
+            source="abstracts", last_success=attempt_at, last_attempt=attempt_at
+        ),
+    )
+
+
+def _normalize_abstracts(
+    summaries: dict[str, dict[str, Any]],
+    citation_id_start: int,
+    retrieved_at: datetime,
+) -> tuple[list[ConferenceAbstract], list[Citation]]:
+    abstracts: list[ConferenceAbstract] = []
+    citations: list[Citation] = []
+    cite_id = citation_id_start
+
+    for pmid, raw in summaries.items():
+        if not isinstance(raw, dict) or "title" not in raw:
+            continue
+        pubdate = raw.get("pubdate", "")
+        try:
+            year = int(pubdate.split()[0])
+        except (ValueError, IndexError):
+            continue
+
+        doi = None
+        for aid in raw.get("articleids", []):
+            if aid.get("idtype") == "doi":
+                doi = aid.get("value")
+                break
+
+        journal = raw.get("fulljournalname") or raw.get("source", "")
+        # Heuristic: extract meeting name from journal/source field if obvious
+        meeting = None
+        if "ASCO" in journal or "Clinical Oncology" in journal:
+            meeting = f"ASCO {year}"
+        elif "Cancer Res" in journal or "AACR" in journal:
+            meeting = f"AACR {year}"
+        elif "Ann Oncol" in journal or "ESMO" in journal:
+            meeting = f"ESMO {year}"
+        elif "Immunother Cancer" in journal or "SITC" in journal:
+            meeting = f"SITC {year}"
+        elif "Blood" in journal:
+            meeting = f"ASH {year}"
+
+        abstracts.append(
+            ConferenceAbstract(
+                pmid=pmid,
+                doi=doi,
+                title=raw.get("title", "").rstrip("."),
+                year=year,
+                journal=journal,
+                meeting=meeting,
+            )
+        )
+        citations.append(
+            Citation(
+                id=cite_id,
+                url=f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",  # type: ignore[arg-type]
+                title=f"PMID {pmid} · {meeting or journal} {year}",
+                source_type="abstract",
+                retrieved_at=retrieved_at,
+                locator=f"PMID {pmid}",
+            )
+        )
+        cite_id += 1
+
+    return abstracts, citations
 
 
 def _normalize(

@@ -53,9 +53,25 @@ dosing:
   biomarker_selection: "CLDN18.2 IHC ≥75% of tumor cells with moderate-to-strong membranous staining (Ventana CLDN18 [43-14A] CDx)"
   half_life: "~13 days"
 
-differentiation: "First-in-class CLDN18.2 therapy in gastric cancer, opening a new biomarker-defined population (~38% of HER2-negative gastric/GEJ patients are CLDN18.2-high). Simple mAb mechanism enables broad combinability; chemo-additive without major overlapping toxicity beyond GI. Strong PFS+OS benefit despite no ORR improvement signals depth-of-response advantage."
-unmet_need: "ORR not improved over chemo alone — PFS/OS gain comes from delayed progression rather than response rate; severe nausea/vomiting requires intensive antiemetic prophylaxis; resistance mechanisms not yet characterized; second-line post-zolbetuximab landscape undefined; non-gastric CLDN18.2+ tumors (pancreatic, biliary) underserved."
-competitive_pressure: "ADC tier rapidly building: CMG901 (AstraZeneca/Keymed), AZD0901, TST001, LM-302, RC118 — multiple in phase 2-3. CAR-T contenders CT041 (CARsgen, satricabtagene autoleucel) showing 50%+ ORR in phase 1 gastric. Bispecifics AZD5863 (CLDN18.2×CD3) and Q-1802 in early development. Second-gen mAbs (osemitamab/TST001) attempting to improve safety profile. CLDN18.2-targeted radioligands also emerging."
+differentiation:
+  - "First-in-class CLDN18.2 therapy in gastric cancer"
+  - "Opens a new biomarker-defined population (~38% of HER2-negative gastric/GEJ are CLDN18.2-high)"
+  - "Simple mAb mechanism enables broad combinability with chemo backbones"
+  - "Strong PFS+OS benefit despite no ORR improvement signals depth-of-response advantage"
+
+unmet_need:
+  - "ORR not improved over chemo alone — gains come from delayed progression, not response rate"
+  - "Severe nausea/vomiting requires intensive antiemetic prophylaxis"
+  - "Resistance mechanisms not yet characterized"
+  - "Second-line post-zolbetuximab landscape undefined"
+  - "Non-gastric CLDN18.2+ tumors (pancreatic, biliary) underserved"
+
+competitive_pressure:
+  - "ADC tier rapidly building: CMG901 (AstraZeneca/Keymed), AZD0901, TST001, LM-302, RC118 in phase 2-3"
+  - "CAR-T contender CT041 (CARsgen, satricabtagene autoleucel) showing 50%+ ORR in phase 1 gastric"
+  - "Bispecifics AZD5863 (CLDN18.2×CD3) and Q-1802 in early development"
+  - "Second-gen mAbs (osemitamab/TST001) attempting to improve safety profile"
+  - "CLDN18.2-targeted radioligands also emerging"
 
 last_curated: 2026-05-03
 curator_notes: "CLDN18.2 landscape moving fastest of the three antigens tracked. Expect TPP refresh quarterly as ADC and CAR-T phase 2/3 readouts arrive. CT041 may shift CAR-T into 2L+ standard if phase 2 confirms phase 1 ORR."

@@ -17,7 +17,7 @@ load_dotenv()  # Pick up ANTHROPIC_API_KEY, NCBI_API_KEY, EDGAR_USER_AGENT from 
 from taa.normalize import filter_excluded, load_modality_map, trials_to_programs
 from taa.render import make_env, render_antigen, render_index
 from taa.schema import Antigen, AntigenData, TargetProductProfile
-from taa.sources import ctgov, edgar, news, openalex, opentargets, pubmed
+from taa.sources import ctgov, edgar, ema, fda, news, openalex, opentargets, pubmed
 from taa.synth import synthesize, validate_against_citations
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -53,6 +53,9 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
     # keep page-local IDs unique across sources without coordination.
     ctgov_task = asyncio.create_task(ctgov.fetch(antigen, citation_id_start=1))
     pubmed_task = asyncio.create_task(pubmed.fetch(antigen, citation_id_start=10000))
+    abstracts_task = asyncio.create_task(
+        pubmed.fetch_conference_abstracts(antigen, citation_id_start=15000)
+    )
     openalex_task = asyncio.create_task(openalex.fetch(antigen, citation_id_start=20000))
     edgar_task = asyncio.create_task(edgar.fetch(antigen, citation_id_start=30000))
     ot_task = asyncio.create_task(opentargets.fetch(antigen, citation_id_start=40000))
@@ -60,6 +63,7 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
 
     ctgov_r = await ctgov_task
     pubmed_r = await pubmed_task
+    abstracts_r = await abstracts_task
     openalex_r = await openalex_task
     edgar_r = await edgar_task
     ot_r = await ot_task
@@ -73,6 +77,11 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         (DATA_DIR / f"_unknowns-{antigen.slug}.txt").write_text("\n".join(unknowns) + "\n")
 
+    # FDA + EMA: query against the curated drug list (fast, deterministic)
+    drug_names = [d.canonical_drug for d in programs if d.canonical_drug]
+    fda_r = await fda.fetch_for_drugs(antigen, drug_names, citation_id_start=60000)
+    ema_r = await ema.fetch_for_drugs(antigen, drug_names, citation_id_start=70000)
+
     return AntigenData(
         antigen=antigen,
         programs=programs,
@@ -81,20 +90,29 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
         filings=edgar_r.filings,
         citations=ctgov_r.citations
         + pubmed_r.citations
+        + abstracts_r.citations
         + openalex_r.citations
         + edgar_r.citations
         + ot_r.citations
-        + news_r.citations,
+        + news_r.citations
+        + fda_r.citations
+        + ema_r.citations,
         freshness=[
             ctgov_r.freshness,
             pubmed_r.freshness,
+            abstracts_r.freshness,
             openalex_r.freshness,
             edgar_r.freshness,
             ot_r.freshness,
             news_r.freshness,
+            fda_r.freshness,
+            ema_r.freshness,
         ],
         open_targets=ot_r.data,
         news=news_r.items,
+        fda_approvals=fda_r.approvals,
+        ema_approvals=ema_r.approvals,
+        abstracts=abstracts_r.abstracts,
         generated_at=datetime.now(timezone.utc),
     )
 
@@ -153,8 +171,9 @@ async def _refresh_all() -> None:
         tpp_marker = "·TPP" if tpp else ""
         print(
             f"  wrote dist/{antigen.slug}.html "
-            f"({len(data.programs)}p·{len(data.papers)}pap·{len(data.filings)}fil·"
-            f"{ot_drugs}OT-drugs·{len(data.news)}news{tpp_marker})",
+            f"({len(data.programs)}p·{len(data.papers)}pap·{len(data.abstracts)}abs·"
+            f"{len(data.filings)}fil·{ot_drugs}OT·{len(data.news)}news·"
+            f"{len(data.fda_approvals)}FDA·{len(data.ema_approvals)}EMA{tpp_marker})",
             file=sys.stderr,
         )
         rendered.append(data)

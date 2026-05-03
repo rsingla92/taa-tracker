@@ -102,6 +102,49 @@ class Filing(BaseModel):
     filing_url: HttpUrl
 
 
+class FDAApproval(BaseModel):
+    """One FDA-approved application (NDA / BLA) record from openFDA."""
+
+    application_number: str  # "BLA125550", "NDA214511"
+    sponsor: str
+    display_name: str
+    brand_names: list[str] = Field(default_factory=list)
+    generic_names: list[str] = Field(default_factory=list)
+    first_approved: date
+    latest_action: date
+    approval_count: int = 0  # # of approval submissions on this application
+    routes: list[str] = Field(default_factory=list)
+    dosage_forms: list[str] = Field(default_factory=list)
+
+
+class EMAApproval(BaseModel):
+    """One EMA-authorized medicine record from the EPAR bulk download."""
+
+    name: str
+    active_substance: str
+    marketing_authorisation_holder: str
+    ema_product_number: str
+    authorisation_date: date | None = None
+    atc_code: str | None = None
+    url: str | None = None
+
+
+class ConferenceAbstract(BaseModel):
+    """A conference proceeding abstract sourced via PubMed (journal supplement).
+
+    Distinct from Paper because conference abstracts have different metadata
+    (meeting name, abstract number) and BD readers want them broken out.
+    """
+
+    pmid: str | None = None
+    doi: str | None = None
+    title: str
+    year: int
+    journal: str | None = None  # e.g., "J Clin Oncol", "Cancer Res"
+    meeting: str | None = None  # e.g., "ASCO Annual Meeting 2025"
+    abstract_number: str | None = None
+
+
 class Program(BaseModel):
     """A canonical drug development effort against one antigen with one modality.
 
@@ -129,7 +172,9 @@ class Program(BaseModel):
 class SourceFreshness(BaseModel):
     """Per-source freshness metadata for the stale-data UX."""
 
-    source: Literal["ctgov", "pubmed", "openalex", "edgar", "opentargets", "news"]
+    source: Literal[
+        "ctgov", "pubmed", "openalex", "edgar", "opentargets", "news", "fda", "ema", "abstracts"
+    ]
     last_success: datetime | None = None
     last_attempt: datetime
     error: str | None = None  # populated if last_attempt failed
@@ -220,9 +265,9 @@ class TargetProductProfile(BaseModel):
     safety: TPPSafety
     dosing: TPPDosing
 
-    differentiation: str  # one-line, what makes the leading drug differentiated
-    unmet_need: str  # one-line, what gap in the SoC remains
-    competitive_pressure: str  # one-line, what's coming behind the leader
+    differentiation: list[str] = Field(default_factory=list)  # bullets
+    unmet_need: list[str] = Field(default_factory=list)  # bullets
+    competitive_pressure: list[str] = Field(default_factory=list)  # bullets
 
     last_curated: date
     curator_notes: str | None = None
@@ -248,6 +293,9 @@ class AntigenData(BaseModel):
     freshness: list[SourceFreshness] = Field(default_factory=list)
     open_targets: OpenTargetsData | None = None
     news: list[NewsItem] = Field(default_factory=list)
+    fda_approvals: list[FDAApproval] = Field(default_factory=list)
+    ema_approvals: list[EMAApproval] = Field(default_factory=list)
+    abstracts: list[ConferenceAbstract] = Field(default_factory=list)
     generated_at: datetime
 
 

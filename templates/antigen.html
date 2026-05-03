@@ -61,6 +61,8 @@
   {% endfor %}
   {% if tpp %}<a href="#tpp" class="toc-link toc-link-tpp">TPP benchmark</a>{% endif %}
   {% if open_targets %}<a href="#biology" class="toc-link">Biology</a>{% endif %}
+  {% if fda_approvals or ema_approvals %}<a href="#approvals" class="toc-link">Approvals ({{ fda_approvals|length + ema_approvals|length }})</a>{% endif %}
+  {% if abstracts %}<a href="#abstracts" class="toc-link">Abstracts ({{ abstract_count }})</a>{% endif %}
   {% if news %}<a href="#news" class="toc-link">News ({{ news | length }})</a>{% endif %}
   <a href="#citations" class="toc-link">Citations</a>
 </nav>
@@ -70,6 +72,7 @@
 {% if tpp %}
 <section class="tpp" id="tpp">
   <h2>Target Product Profile · current standard benchmark</h2>
+
   <div class="tpp-header">
     <div class="tpp-leader">
       <div class="tpp-leader-name">{{ tpp.leading_drug }}</div>
@@ -83,76 +86,111 @@
     {% endif %}
   </div>
 
-  <div class="tpp-mech">
-    <span class="tpp-label">MECHANISM</span>
-    <p>{{ tpp.mechanism }}</p>
-  </div>
+  <table class="tpp-table">
+    <tbody>
+      <tr>
+        <th class="tpp-section-row" colspan="2">Mechanism</th>
+      </tr>
+      <tr>
+        <td class="tpp-table-label">MoA</td>
+        <td>{{ tpp.mechanism }}</td>
+      </tr>
 
-  <div class="tpp-grid">
-    <div class="tpp-block">
-      <h3 class="tpp-label">Primary endpoints</h3>
-      <ul class="tpp-endpoint-list">
-        {% for ep in tpp.primary_endpoints %}
-        <li>
-          <span class="ep-name">{{ ep.name }}</span>
-          <span class="ep-metric">{{ ep.metric }}</span>
-          {% if ep.comparator %}<span class="ep-comparator meta-text">{{ ep.comparator }}</span>{% endif %}
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    <div class="tpp-block">
-      <h3 class="tpp-label">Secondary endpoints</h3>
-      <ul class="tpp-endpoint-list">
-        {% for ep in tpp.secondary_endpoints %}
-        <li>
-          <span class="ep-name">{{ ep.name }}</span>
-          <span class="ep-metric">{{ ep.metric }}</span>
-          {% if ep.comparator %}<span class="ep-comparator meta-text">{{ ep.comparator }}</span>{% endif %}
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    <div class="tpp-block">
-      <h3 class="tpp-label">Safety</h3>
-      <ul class="tpp-list">
-        {% for ae in tpp.safety.common_aes[:5] %}<li class="meta-text">{{ ae }}</li>{% endfor %}
-      </ul>
-      {% if tpp.safety.aes_of_special_interest %}
-      <h4 class="tpp-sublabel">AESI</h4>
-      <ul class="tpp-list">
-        {% for ae in tpp.safety.aes_of_special_interest %}<li>{{ ae }}</li>{% endfor %}
-      </ul>
+      {% if tpp.primary_endpoints %}
+      <tr><th class="tpp-section-row" colspan="2">Primary endpoints</th></tr>
+      {% for ep in tpp.primary_endpoints %}
+      <tr>
+        <td class="tpp-table-label">{{ ep.name }}</td>
+        <td><span class="ep-metric">{{ ep.metric }}</span>{% if ep.comparator %} <span class="meta-text">— {{ ep.comparator }}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
       {% endif %}
-      {% if tpp.safety.discontinuation_rate %}<p class="meta-text">Discontinuation: {{ tpp.safety.discontinuation_rate }}</p>{% endif %}
-      {% if tpp.safety.boxed_warning %}<p class="boxed-warning">⚠ Boxed: {{ tpp.safety.boxed_warning }}</p>{% endif %}
-    </div>
 
-    <div class="tpp-block">
-      <h3 class="tpp-label">Dosing &amp; PK</h3>
-      <p><strong>Regimen:</strong> {{ tpp.dosing.regimen }}</p>
-      <p><strong>Route:</strong> {{ tpp.dosing.route }}</p>
-      {% if tpp.dosing.line_of_therapy %}<p><strong>Line:</strong> {{ tpp.dosing.line_of_therapy }}</p>{% endif %}
-      {% if tpp.dosing.biomarker_selection %}<p><strong>Biomarker:</strong> {{ tpp.dosing.biomarker_selection }}</p>{% endif %}
-      {% if tpp.dosing.half_life %}<p><strong>t½:</strong> {{ tpp.dosing.half_life }}</p>{% endif %}
-    </div>
-  </div>
+      {% if tpp.secondary_endpoints %}
+      <tr><th class="tpp-section-row" colspan="2">Secondary endpoints</th></tr>
+      {% for ep in tpp.secondary_endpoints %}
+      <tr>
+        <td class="tpp-table-label">{{ ep.name }}</td>
+        <td><span class="ep-metric">{{ ep.metric }}</span>{% if ep.comparator %} <span class="meta-text">— {{ ep.comparator }}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+
+      <tr><th class="tpp-section-row" colspan="2">Safety</th></tr>
+      {% if tpp.safety.common_aes %}
+      <tr>
+        <td class="tpp-table-label">Common AEs</td>
+        <td>{{ tpp.safety.common_aes | join('; ') }}</td>
+      </tr>
+      {% endif %}
+      {% if tpp.safety.aes_of_special_interest %}
+      <tr>
+        <td class="tpp-table-label">AESI</td>
+        <td>{% for ae in tpp.safety.aes_of_special_interest %}{{ ae }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      </tr>
+      {% endif %}
+      {% if tpp.safety.discontinuation_rate %}
+      <tr>
+        <td class="tpp-table-label">Discontinuation</td>
+        <td>{{ tpp.safety.discontinuation_rate }}</td>
+      </tr>
+      {% endif %}
+      {% if tpp.safety.boxed_warning %}
+      <tr>
+        <td class="tpp-table-label">Boxed warning</td>
+        <td><span class="boxed-warning-inline">⚠ {{ tpp.safety.boxed_warning }}</span></td>
+      </tr>
+      {% endif %}
+
+      <tr><th class="tpp-section-row" colspan="2">Dosing &amp; PK</th></tr>
+      <tr>
+        <td class="tpp-table-label">Regimen</td>
+        <td>{{ tpp.dosing.regimen }}</td>
+      </tr>
+      <tr>
+        <td class="tpp-table-label">Route</td>
+        <td>{{ tpp.dosing.route }}</td>
+      </tr>
+      {% if tpp.dosing.line_of_therapy %}
+      <tr>
+        <td class="tpp-table-label">Line of therapy</td>
+        <td>{{ tpp.dosing.line_of_therapy }}</td>
+      </tr>
+      {% endif %}
+      {% if tpp.dosing.biomarker_selection %}
+      <tr>
+        <td class="tpp-table-label">Biomarker</td>
+        <td>{{ tpp.dosing.biomarker_selection }}</td>
+      </tr>
+      {% endif %}
+      {% if tpp.dosing.half_life %}
+      <tr>
+        <td class="tpp-table-label">Half-life</td>
+        <td>{{ tpp.dosing.half_life }}</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
 
   <div class="tpp-strategic">
+    {% if tpp.differentiation %}
     <div class="tpp-strat-block">
       <h3 class="tpp-label">Differentiation</h3>
-      <p>{{ tpp.differentiation }}</p>
+      <ul class="tpp-bullets">{% for b in tpp.differentiation %}<li>{{ b }}</li>{% endfor %}</ul>
     </div>
+    {% endif %}
+    {% if tpp.unmet_need %}
     <div class="tpp-strat-block">
       <h3 class="tpp-label">Unmet need</h3>
-      <p>{{ tpp.unmet_need }}</p>
+      <ul class="tpp-bullets">{% for b in tpp.unmet_need %}<li>{{ b }}</li>{% endfor %}</ul>
     </div>
+    {% endif %}
+    {% if tpp.competitive_pressure %}
     <div class="tpp-strat-block">
       <h3 class="tpp-label">Competitive pressure</h3>
-      <p>{{ tpp.competitive_pressure }}</p>
+      <ul class="tpp-bullets">{% for b in tpp.competitive_pressure %}<li>{{ b }}</li>{% endfor %}</ul>
     </div>
+    {% endif %}
   </div>
 
   <p class="tpp-foot meta-text">Curated {{ tpp.last_curated.isoformat() }}{% if tpp.curator_notes %} · {{ tpp.curator_notes }}{% endif %}</p>
@@ -264,6 +302,68 @@
 <section class="empty-state">
   <p>No programs found in any source as of {{ generated_at.strftime('%Y-%m-%d') }}.</p>
   <p class="meta-text">This antigen may have been recently added, or all sources may have failed in the last refresh.</p>
+</section>
+{% endif %}
+
+{# ---- Approvals (FDA + EMA) ---- #}
+{% if fda_approvals or ema_approvals %}
+<section class="approvals" id="approvals">
+  <h2>Regulatory approvals · FDA + EMA ground truth</h2>
+  <table class="approvals-table">
+    <thead>
+      <tr>
+        <th style="width: 80px;">Agency</th>
+        <th>Drug</th>
+        <th>Sponsor</th>
+        <th style="width: 130px;">Application</th>
+        <th style="width: 110px;">First approved</th>
+        <th style="width: 110px;">Latest action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in fda_approvals %}
+      <tr>
+        <td><span class="agency-pill agency-fda">FDA</span></td>
+        <td><strong>{{ a.display_name }}</strong>{% if a.brand_names and a.brand_names[0] != a.display_name %} <span class="meta-text">({{ a.brand_names | join(', ') }})</span>{% endif %}</td>
+        <td>{{ a.sponsor }}</td>
+        <td class="mono">{{ a.application_number }}</td>
+        <td class="tnum">{{ a.first_approved.isoformat() }}</td>
+        <td class="tnum">{{ a.latest_action.isoformat() }}</td>
+      </tr>
+      {% endfor %}
+      {% for a in ema_approvals %}
+      <tr>
+        <td><span class="agency-pill agency-ema">EMA</span></td>
+        <td><strong>{{ a.name }}</strong>{% if a.active_substance and a.active_substance != a.name %} <span class="meta-text">({{ a.active_substance }})</span>{% endif %}</td>
+        <td>{{ a.marketing_authorisation_holder }}</td>
+        <td class="mono">{{ a.ema_product_number }}</td>
+        <td class="tnum">{{ a.authorisation_date.isoformat() if a.authorisation_date else '—' }}</td>
+        <td class="tnum">—</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{# ---- Conference abstracts (PubMed-indexed ASCO/AACR/ESMO/SITC/ASH) ---- #}
+{% if abstracts %}
+<section class="abstracts" id="abstracts">
+  <h2>Recent conference abstracts · {{ abstract_count }} from ASCO/AACR/ESMO/SITC/ASH</h2>
+  <ul class="news-list">
+    {% for ab in abstracts %}
+    <li>
+      <a class="news-title" href="https://pubmed.ncbi.nlm.nih.gov/{{ ab.pmid }}/" rel="nofollow noopener">{{ ab.title }}</a>
+      <div class="news-meta meta-text">
+        {% if ab.meeting %}<span class="news-source">{{ ab.meeting }}</span>{% endif %}
+        <span>{{ ab.journal }}</span>
+        <span class="news-date">{{ ab.year }}</span>
+        {% if ab.pmid %}<span class="mono">PMID {{ ab.pmid }}</span>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if abstract_count > abstracts | length %}<p class="meta-text">+{{ abstract_count - abstracts | length }} more abstracts indexed</p>{% endif %}
 </section>
 {% endif %}
 

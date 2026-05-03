@@ -54,9 +54,25 @@ dosing:
   biomarker_selection: "BCMA expression assumed (essentially universal in MM); no IHC required pre-treatment in current label"
   half_life: "Not applicable — CAR-T cells persist in circulation for months/years"
 
-differentiation: "Deepest and most durable responses in R/R MM to date — sCR rates exceeding 70% with one-time treatment; allows treatment-free intervals not seen with continuous BCMA bispecifics. Earlier-line move (CARTITUDE-4) substantially expanded addressable population."
-unmet_need: "Manufacturing time (4-6 weeks vein-to-vein) excludes rapidly progressing patients; bridging therapy gaps; MNT (parkinsonism) signal limits broad earlier-line adoption; durability past 2-3 years uncertain in earlier-line population; relapse after BCMA CAR-T leaves limited options (GPRC5D may help)."
-competitive_pressure: "Idecabtagene vicleucel (Abecma, BMS/2seventy) is the comparator CAR-T. BCMA bispecifics teclistamab (Tecvayli/J&J), elranatamab (Elrexfio/Pfizer), linvoseltamab (Regeneron) offer off-the-shelf alternatives. ABBV-383 in phase 3. Dual-target bispecifics (BCMA+CD3, BCMA+GPRC5D) in early development. Allogeneic BCMA CAR-T programs (Allogene, Caribou) chasing manufacturing-time wedge."
+differentiation:
+  - "Deepest and most durable responses in R/R MM to date — sCR rates exceeding 70%"
+  - "One-time treatment with treatment-free intervals not seen with continuous BCMA bispecifics"
+  - "Earlier-line move (CARTITUDE-4) substantially expanded addressable population"
+  - "Long-lived CAR-T persistence enables durable disease control without maintenance"
+
+unmet_need:
+  - "Manufacturing time (4-6 weeks vein-to-vein) excludes rapidly progressing patients"
+  - "Bridging therapy gaps during manufacturing"
+  - "MNT (movement/neurocognitive) signal limits broad earlier-line adoption"
+  - "Durability past 2-3 years uncertain in earlier-line population"
+  - "Relapse after BCMA CAR-T leaves limited options (GPRC5D may help)"
+
+competitive_pressure:
+  - "Idecabtagene vicleucel (Abecma, BMS/2seventy) is the comparator CAR-T"
+  - "BCMA bispecifics: teclistamab (Tecvayli/J&J), elranatamab (Elrexfio/Pfizer), linvoseltamab (Regeneron) offer off-the-shelf alternatives"
+  - "ABBV-383 (AbbVie) in phase 3"
+  - "Dual-target bispecifics (BCMA+CD3, BCMA+GPRC5D) in early development"
+  - "Allogeneic BCMA CAR-T programs (Allogene, Caribou) chasing manufacturing-time wedge"
 
 last_curated: 2026-05-03
 curator_notes: "CARTITUDE-4 readout shifted treatment paradigm to earlier-line CAR-T. MNT signal needs ongoing monitoring across longer follow-up; FDA class warning on secondary malignancies applies."
