@@ -1,0 +1,408 @@
+/* TAA Tracker design system — see DESIGN.md for tokens and rationale. */
+
+:root {
+  /* Surfaces */
+  --bg: #FAFAF7;
+  --surface: #FFFFFF;
+  --border: #E8E5DD;
+  --border-strong: #D4D0C4;
+
+  /* Text */
+  --text: #0A0A0B;
+  --muted: #6B6B72;
+
+  /* Accents */
+  --accent: #1B2541;
+  --active: #B65140;
+
+  /* Semantic */
+  --success: #2D6A4F;
+  --warning: #B5803C;
+  --error: #9B2C2C;
+  --info: #1B2541;
+
+  /* Modality (cross-cut grid only) */
+  --m-adc: #B65140;
+  --m-cart: #3A6B6E;
+  --m-bisp: #B5803C;
+  --m-mab: #4A4A52;
+  --m-rdli: #5B3F67;
+  --m-vacc: #7A8050;
+  --m-other: #8A8A8A;
+
+  --font-display: 'Source Serif 4', Georgia, serif;
+  --font-body: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+}
+
+[data-theme="dark"] {
+  --bg: #16151A;
+  --surface: #1F1E24;
+  --border: #2D2C33;
+  --border-strong: #3D3C44;
+  --text: #F5F2EA;
+  --muted: #9D9A92;
+  --accent: #A8B5D0;
+  --active: #D4694F;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-strong);
+  transition: border-color 150ms ease-out;
+}
+a:hover { border-color: var(--accent); }
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+.tnum { font-feature-settings: "tnum"; }
+.meta-text { color: var(--muted); font-size: 13px; }
+
+/* ===== Sticky header ===== */
+.app-header {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex; align-items: center; gap: 32px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+}
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  font-variation-settings: "opsz" 18;
+  color: var(--text);
+  border: none;
+}
+.wordmark::after {
+  content: "TAA";
+  background: var(--text);
+  color: var(--bg);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  margin-left: 8px;
+  border-radius: 2px;
+  vertical-align: 3px;
+}
+.as-of {
+  font-size: 13px;
+  color: var(--muted);
+  margin-left: auto;
+  font-feature-settings: "tnum";
+}
+.theme-toggle {
+  background: none; border: 1px solid var(--border-strong); border-radius: 2px;
+  padding: 6px 10px; font: inherit; font-size: 13px; color: var(--text); cursor: pointer;
+}
+.theme-toggle:hover { border-color: var(--text); }
+
+/* ===== Main wrapper ===== */
+.shell { max-width: 1280px; margin: 0 auto; padding: 0 32px 96px; }
+section + section { margin-top: 64px; }
+
+/* ===== Stale-source banner ===== */
+.stale-banner {
+  margin-top: 24px;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  border-left: 3px solid var(--warning);
+  font-size: 13px;
+  color: var(--text);
+}
+.stale-banner .mono { background: var(--surface); padding: 1px 6px; border: 1px solid var(--border); border-radius: 2px; font-size: 12px; }
+
+/* ===== Hero ===== */
+.hero {
+  margin-top: 48px;
+  padding-top: 48px;
+  border-top: 2px solid var(--text);
+}
+.hero-eyebrow {
+  font-size: 12px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.hero-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 80px;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 60;
+  margin: 0 0 16px;
+}
+.hero-meta {
+  font-size: 14px; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 12px 16px;
+  align-items: center;
+  margin-bottom: 40px;
+}
+.alias {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+
+/* ===== Cross-cut grid (the visual hero moment) ===== */
+.crosscut {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 32px;
+  display: grid;
+  gap: 14px;
+}
+.crosscut-title {
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 8px;
+  display: flex; justify-content: space-between; gap: 16px;
+}
+.crosscut-legend { font-family: var(--font-mono); font-size: 11px; text-transform: none; letter-spacing: 0; }
+.crosscut-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 60px 90px;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+}
+.cc-modality {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  font-variation-settings: "opsz" 24;
+}
+.cc-bar {
+  height: 18px;
+  position: relative;
+  background: var(--border);
+  min-width: 16px;
+}
+.cc-bar-fill {
+  height: 100%;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 8px;
+  color: white;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  min-width: 24px;
+}
+.cc-adc { background: var(--m-adc); }
+.cc-car-t { background: var(--m-cart); }
+.cc-bispecific { background: var(--m-bisp); }
+.cc-mab { background: var(--m-mab); }
+.cc-radioligand { background: var(--m-rdli); }
+.cc-vaccine { background: var(--m-vacc); }
+.cc-other { background: var(--m-other); }
+.cc-count {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+  font-size: 14px;
+  color: var(--text);
+  text-align: right;
+}
+.cc-phase {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  border: 1px solid currentColor;
+  padding: 2px 6px;
+  border-radius: 2px;
+  width: fit-content;
+  justify-self: end;
+}
+
+/* ===== Per-modality detail tables ===== */
+.modality-block { margin-top: 56px; }
+.modality-head {
+  display: flex; align-items: baseline; gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.modality-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  font-variation-settings: "opsz" 36;
+  margin: 0;
+}
+.modality-swatch {
+  width: 16px; height: 16px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.swatch-adc { background: var(--m-adc); }
+.swatch-car-t { background: var(--m-cart); }
+.swatch-bispecific { background: var(--m-bisp); }
+.swatch-mab { background: var(--m-mab); }
+.swatch-radioligand { background: var(--m-rdli); }
+.swatch-vaccine { background: var(--m-vacc); }
+.swatch-other { background: var(--m-other); }
+
+.modality-count {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+  font-size: 13px;
+  color: var(--muted);
+}
+
+table.programs {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+table.programs th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-strong);
+}
+table.programs td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+table.programs tr:hover td { background: var(--bg); }
+table.programs td.tnum { font-family: var(--font-mono); font-feature-settings: "tnum"; font-size: 13px; }
+table.programs td.cite-cell { font-size: 11px; line-height: 1.4; }
+table.programs td.cite-cell .cite { display: inline-block; margin-right: 4px; vertical-align: baseline; }
+table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
+
+/* ===== Phase pills + status indicators ===== */
+.phase-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+}
+.phase-approved { color: var(--success); }
+.phase-3 { color: var(--text); }
+.phase-2-3 { color: var(--text); }
+.phase-2 { color: var(--text); }
+.phase-1-2 { color: var(--muted); }
+.phase-1 { color: var(--muted); }
+.phase-preclinical { color: var(--muted); }
+.phase-unknown { color: var(--muted); }
+
+.status-active::before { content: "● "; color: var(--success); }
+.status-completed::before { content: "● "; color: var(--accent); }
+.status-terminated::before { content: "● "; color: var(--error); }
+.status-terminated { color: var(--muted); }
+.status-withdrawn::before { content: "● "; color: var(--error); }
+.status-withdrawn { color: var(--muted); }
+.status-unknown::before { content: "○ "; color: var(--muted); }
+.status-unknown { color: var(--muted); }
+
+/* ===== Citation marks + footer ===== */
+.cite {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  vertical-align: 3px;
+  text-decoration: none;
+  border: none;
+  margin-left: 1px;
+  font-weight: 500;
+}
+.cite:hover { background: var(--accent); color: var(--bg); }
+
+.citations {
+  margin-top: 80px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-strong);
+}
+.citations h2 {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+.cite-list {
+  list-style: none; padding: 0; margin: 0;
+  font-size: 13px; line-height: 1.7;
+  columns: 2;
+  column-gap: 48px;
+}
+.cite-list li {
+  break-inside: avoid;
+  padding-left: 28px;
+  position: relative;
+  margin-bottom: 4px;
+}
+.cite-list .num {
+  position: absolute; left: 0;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  font-size: 11px;
+  width: 22px; text-align: right;
+}
+.cite-list .id {
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--text);
+}
+
+/* ===== Empty state ===== */
+.empty-state {
+  margin-top: 64px;
+  padding: 48px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  text-align: center;
+}
+
+/* ===== Footer ===== */
+.app-footer {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 32px 48px;
+  border-top: 1px solid var(--border-strong);
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .shell { padding: 0 16px 64px; }
+  .app-header { padding: 12px 16px; gap: 16px; }
+  .hero-name { font-size: 48px; }
+  .crosscut-row { grid-template-columns: 80px 1fr 50px; }
+  .crosscut-row .cc-phase { display: none; }
+  .cite-list { columns: 1; }
+  table.programs { font-size: 13px; }
+}

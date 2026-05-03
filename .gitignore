@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build output (regenerated each cron run, gitignored per eng review decision 1B)
+dist/
+
+# Secrets
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Synthesis output (gitignored per eng review decision 1B — only structured data committed)
+data/synthesis/
+
+# Unknown-intervention dumps (regenerated each refresh; bin/audit-matches consumes them)
+data/_unknowns-*.txt
+.gstack/

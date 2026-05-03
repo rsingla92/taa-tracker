@@ -1,0 +1,63 @@
+# Drug name → modality lookup.
+#
+# Substring match, case-insensitive. Most-specific first (since first hit wins).
+# Drug names appear in CT.gov interventions in many forms: "T-DXd (DS-8201)",
+# "Trastuzumab deruxtecan", "DS-8201a", etc. Catching ANY of those forms is enough.
+#
+# Unknown drugs default to "other" modality and get surfaced by bin/audit-matches.
+
+adc:
+  # HER2-targeting ADCs
+  - "T-DXd"
+  - "DS-8201"
+  - "trastuzumab deruxtecan"
+  - "Enhertu"
+  - "T-DM1"
+  - "ado-trastuzumab"
+  - "Kadcyla"
+  - "SYD985"
+  - "trastuzumab duocarmazine"
+  - "vic-trastuzumab"
+  - "disitamab vedotin"
+  - "RC48"
+  - "ARX788"
+  - "MRG002"
+  - "BB-1701"
+
+mab:
+  # HER2-targeting mAbs
+  - "trastuzumab"  # bare trastuzumab without deruxtecan/duocarmazine prefix
+  - "Herceptin"
+  - "pertuzumab"
+  - "Perjeta"
+  - "margetuximab"
+  - "Margenza"
+
+bispecific:
+  # HER2-targeting bispecifics
+  - "zanidatamab"
+  - "ZW25"
+  - "petosemtamab"
+  - "MCLA-129"
+  - "GEN1046"
+  - "ZW49"
+  - "ABBV-400"
+
+car-t:
+  - "CAR-T"
+  - "CAR T"
+  - "chimeric antigen receptor"
+
+vaccine:
+  - "vaccine"
+  - "peptide vaccine"
+  - "dendritic cell"
+  - "GP2"
+  - "E75"
+  - "AE37"
+
+radioligand:
+  - "radioligand"
+  - "Lu-177"
+  - "lutetium"
+  - "actinium"

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}TAA Tracker{% endblock %}</title>
+<meta name="description" content="{% block description %}Tumour-associated antigen scorecards — modality cross-cut competitive intelligence.{% endblock %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/system.css">
+</head>
+<body>
+<header class="app-header">
+  <a class="wordmark" href="/">tracker</a>
+  <span class="as-of">as of {{ generated_at.strftime('%Y-%m-%d') if generated_at else '' }}</span>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">light / dark</button>
+</header>
+
+<div class="shell">
+  {% block content %}{% endblock %}
+</div>
+
+<footer class="app-footer">
+  <span>TAA Tracker — open source competitive intelligence for tumour-associated antigens</span>
+  <span class="mono">v{{ version | default('0.1.0') }}</span>
+</footer>
+
+<script>
+  // Theme toggle — persisted to localStorage
+  (function () {
+    const KEY = 'taa-theme';
+    const saved = localStorage.getItem(KEY);
+    if (saved === 'dark' || saved === 'light') {
+      document.documentElement.dataset.theme = saved;
+    }
+    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem(KEY, next);
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Curated TAA universe — v0.1 ships with HER2 only as the vertical-slice proof.
+# Add more antigens by appending entries with the same shape.
+#
+# Per-antigen exclude_terms filter false positives from the CT.gov / PubMed query
+# (e.g., "CD3" alone matches every T-cell engager — we'd add "CD3 engager" to
+# excludes for an antigen we want to track only as a TAA target).
+
+- slug: her2
+  primary_name: HER2
+  aliases:
+    - ERBB2
+    - CD340
+  # Note: dropped "NEU" alias — too lossy (matches neurology, neuroendocrine,
+  # neutropenia etc.). The "CD3 problem" anticipated in the design doc, in the wild.
+  uniprot_id: P04626
+  hgnc_symbol: ERBB2
+  indication_tags:
+    - breast
+    - gastric
+    - NSCLC
+    - colorectal
+    - urothelial
+  notes: >
+    The most heavily-trafficked TAA in oncology. Anchor antigen for the v0.1
+    vertical slice — high data volume across modalities lets us exercise the
+    cross-cut grid, table density, and citation rendering at realistic scale.
+  exclude_terms: []

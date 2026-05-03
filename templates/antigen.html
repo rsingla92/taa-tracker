@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ antigen.primary_name }} — TAA Tracker{% endblock %}
+{% block description %}{{ antigen.primary_name }} ({{ antigen.aliases | join(', ') }}) — programs by modality, sponsors, recent trial readouts. As of {{ generated_at.strftime('%Y-%m-%d') }}.{% endblock %}
+
+{% block content %}
+{# ---- Stale source banner ---- #}
+{% set stale = freshness | selectattr('is_stale') | list %}
+{% if stale %}
+<div class="stale-banner">
+  Some sources failed in the last refresh:
+  {% for s in stale %}<span class="mono">{{ s.source }}</span>{% if not loop.last %}, {% endif %}{% endfor %}.
+  Showing last-known data for affected sections.
+</div>
+{% endif %}
+
+{# ---- Hero ---- #}
+<section class="hero">
+  <div class="hero-eyebrow">Tumour-Associated Antigen</div>
+  <h1 class="hero-name">{{ antigen.primary_name }}</h1>
+  <div class="hero-meta">
+    {% for alias in antigen.aliases %}
+      <span class="alias">{{ alias }}</span>
+    {% endfor %}
+    {% if antigen.uniprot_id %}<span class="alias">UniProt {{ antigen.uniprot_id }}</span>{% endif %}
+    {% if antigen.hgnc_symbol %}<span class="alias">HGNC {{ antigen.hgnc_symbol }}</span>{% endif %}
+    {% if antigen.indication_tags %}
+      <span class="meta-text">Indications: {{ antigen.indication_tags | join(', ') }}</span>
+    {% endif %}
+  </div>
+
+  {# ---- Modality cross-cut grid (the visual hero moment) ---- #}
+  <div class="crosscut">
+    <div class="crosscut-title">
+      <span>Modality landscape — {{ programs | length }} programs across {{ modality_summary | length }} modalities</span>
+      <span class="crosscut-legend">programs · most-advanced phase</span>
+    </div>
+
+    {% for row in modality_summary %}
+    <div class="crosscut-row">
+      <span class="cc-modality">{{ row.label }}</span>
+      <div class="cc-bar">
+        <div class="cc-bar-fill cc-{{ row.modality }}" style="width: {{ row.bar_pct }}%;">
+          {% if row.bar_pct >= 12 %}{{ row.count }}{% endif %}
+        </div>
+      </div>
+      <span class="cc-count">{{ row.count }}</span>
+      <span class="cc-phase phase-{{ row.max_phase | replace('/', '-') }}">{{ row.max_phase }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ---- Per-modality tables ---- #}
+{% for modality_key in modality_order %}
+  {% set group = programs | selectattr('modality', 'equalto', modality_key) | list %}
+  {% if group %}
+  <section class="modality-block">
+    <div class="modality-head">
+      <span class="modality-swatch swatch-{{ modality_key }}"></span>
+      <h3 class="modality-name">{{ modality_label[modality_key] }} programs</h3>
+      <span class="modality-count">{{ group | length }} program{% if group | length != 1 %}s{% endif %}</span>
+    </div>
+
+    <table class="programs">
+      <thead>
+        <tr>
+          <th>Drug</th>
+          <th style="width: 280px;">Sponsors</th>
+          <th style="width: 70px;">Trials</th>
+          <th style="width: 90px;">Phase</th>
+          <th style="width: 100px;">Status</th>
+          <th style="width: 110px;">Updated</th>
+          <th style="width: 110px;">Cite</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for program in group %}
+        <tr>
+          <td><strong>{{ program.canonical_drug }}</strong></td>
+          <td class="sponsors-cell">
+            {% set top = program.sponsors[:2] %}
+            {% set rest = program.sponsors | length - top | length %}
+            {{ top | join(' · ') }}{% if rest > 0 %} <span class="meta-text">+{{ rest }} more</span>{% endif %}
+          </td>
+          <td class="tnum">{{ program.trial_count }}</td>
+          <td><span class="phase-pill phase-{{ program.most_advanced_phase | replace('/', '-') }}">{{ program.most_advanced_phase }}</span></td>
+          <td class="status-{{ program.status }}">{{ program.status }}</td>
+          <td class="tnum">{{ program.latest_update.isoformat() if program.latest_update else '—' }}</td>
+          <td class="cite-cell">
+            {% for cid in program.citation_ids %}<a class="cite" href="#cite-{{ cid }}">[{{ cid }}]</a>{% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+{% endfor %}
+
+{% if not programs %}
+<section class="empty-state">
+  <p>No programs found in any source as of {{ generated_at.strftime('%Y-%m-%d') }}.</p>
+  <p class="meta-text">This antigen may have been recently added, or all sources may have failed in the last refresh.</p>
+</section>
+{% endif %}
+
+{# ---- Citations footer ---- #}
+{% if citations %}
+<section class="citations">
+  <h2>Citations · {{ citations | length }} of {{ total_sources }} sources referenced on this page</h2>
+  <ol class="cite-list">
+    {% for c in citations %}
+    <li id="cite-{{ c.id }}">
+      <span class="num">[{{ c.id }}]</span>
+      <a href="{{ c.url }}" rel="nofollow noopener">
+        <span class="id">{{ c.locator or c.title }}</span>
+      </a>
+      <span class="meta-text">· {{ c.source_type }} · retrieved {{ c.retrieved_at.strftime('%Y-%m-%d') }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
+{% endblock %}
