@@ -17,7 +17,18 @@ load_dotenv()  # Pick up ANTHROPIC_API_KEY, NCBI_API_KEY, EDGAR_USER_AGENT from 
 from taa.normalize import filter_excluded, load_modality_map, trials_to_programs
 from taa.render import make_env, render_antigen, render_index
 from taa.schema import Antigen, AntigenData, TargetProductProfile
-from taa.sources import ctgov, edgar, ema, fda, news, openalex, opentargets, pubmed
+from taa.sources import (
+    ctgov,
+    edgar,
+    ema,
+    europepmc,
+    fda,
+    news,
+    openalex,
+    opentargets,
+    pubmed,
+    reporter,
+)
 from taa.synth import synthesize, validate_against_citations
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -60,6 +71,8 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
     edgar_task = asyncio.create_task(edgar.fetch(antigen, citation_id_start=30000))
     ot_task = asyncio.create_task(opentargets.fetch(antigen, citation_id_start=40000))
     news_task = asyncio.create_task(news.fetch(antigen, citation_id_start=50000))
+    preprints_task = asyncio.create_task(europepmc.fetch(antigen, citation_id_start=80000))
+    grants_task = asyncio.create_task(reporter.fetch(antigen, citation_id_start=90000))
 
     ctgov_r = await ctgov_task
     pubmed_r = await pubmed_task
@@ -68,6 +81,8 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
     edgar_r = await edgar_task
     ot_r = await ot_task
     news_r = await news_task
+    preprints_r = await preprints_task
+    grants_r = await grants_task
 
     trials = filter_excluded(ctgov_r.trials, antigen)
     modality_map = _load_modality_map()
@@ -96,7 +111,9 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
         + ot_r.citations
         + news_r.citations
         + fda_r.citations
-        + ema_r.citations,
+        + ema_r.citations
+        + preprints_r.citations
+        + grants_r.citations,
         freshness=[
             ctgov_r.freshness,
             pubmed_r.freshness,
@@ -107,12 +124,16 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
             news_r.freshness,
             fda_r.freshness,
             ema_r.freshness,
+            preprints_r.freshness,
+            grants_r.freshness,
         ],
         open_targets=ot_r.data,
         news=news_r.items,
         fda_approvals=fda_r.approvals,
         ema_approvals=ema_r.approvals,
         abstracts=abstracts_r.abstracts,
+        preprints=preprints_r.preprints,
+        grants=grants_r.grants,
         generated_at=datetime.now(timezone.utc),
     )
 
@@ -172,6 +193,7 @@ async def _refresh_all() -> None:
         print(
             f"  wrote dist/{antigen.slug}.html "
             f"({len(data.programs)}p·{len(data.papers)}pap·{len(data.abstracts)}abs·"
+            f"{len(data.preprints)}pre·{len(data.grants)}grnt·"
             f"{len(data.filings)}fil·{ot_drugs}OT·{len(data.news)}news·"
             f"{len(data.fda_approvals)}FDA·{len(data.ema_approvals)}EMA{tpp_marker})",
             file=sys.stderr,

@@ -36,6 +36,28 @@ adc:
   - "TST001"  # also bispecific candidate, ordered ADC-first
   - "LM-302"
   - "RC118"
+  # B7-H3-targeting ADCs
+  - "ifinatamab deruxtecan"
+  - "DS-7300"
+  - "I-DXd"
+  - "vobramitamab duocarmazine"
+  - "MGC018"
+  - "HS-20093"
+  - "YL201"
+  - "BAT8009"
+  - "DB-1311"
+  - "ABBV-969"
+  # 5T4-targeting ADCs (sparse pipeline)
+  - "ASN004"
+  - "naptumomab"
+  # ROR1-targeting ADCs
+  - "zilovertamab vedotin"
+  - "VLS-101"
+  - "MK-2140"
+  - "NBE-002"
+  - "LCB71"
+  - "CS5001"
+  - "ABBV-1011"
 
 bispecific:
   # HER2-targeting bispecifics
@@ -56,6 +78,13 @@ bispecific:
   # CLDN18.2-targeting bispecifics
   - "AZD5863"
   - "Q-1802"
+  # B7-H3-targeting bispecifics (academic / early)
+  - "B7-H3 x CD3"
+  # 5T4-targeting bispecifics
+  - "ALG.APV-527"
+  - "APV-527"
+  # ROR1-targeting bispecifics
+  - "NVG-111"
 
 car-t:
   # Generic markers
@@ -75,6 +104,21 @@ car-t:
   # CLDN18.2 CAR-Ts
   - "CT041"
   - "satricabtagene autoleucel"
+  # B7-H3 CAR-Ts
+  - "B7-H3 CAR"
+  - "CD276 CAR"
+  - "4SCAR-276"
+  - "TAA06"
+  - "iC9-CAR.B7-H3"
+  # 5T4 CAR-Ts
+  - "5T4 CAR"
+  - "TPBG CAR"
+  # ROR1 CAR-Ts
+  - "LYL797"
+  - "ONCT-808"
+  - "LYL845"
+  - "4SCAR-ROR1"
+  - "ROR1 CAR"
 
 mab:
   # HER2-targeting mAbs (after ADCs/bispecifics so trastuzumab deruxtecan etc don't match here)
@@ -88,6 +132,14 @@ mab:
   - "zolbetuximab"
   - "Vyloy"
   - "IMAB362"
+  # B7-H3 mAbs
+  - "enoblituzumab"
+  - "MGA271"
+  - "omburtamab"
+  - "8H9"
+  # ROR1 mAbs
+  - "cirmtuzumab"
+  - "UC-961"
 
 vaccine:
   - "vaccine"
@@ -98,9 +150,15 @@ vaccine:
   - "AE37"
   # CLDN18.2 vaccines
   - "BNT211"  # arguably CAR-T but BNT often calls it cell therapy / tumor vaccine
+  # 5T4 vaccines (historical TroVax + descendants)
+  - "TroVax"
+  - "MVA-5T4"
 
 radioligand:
   - "radioligand"
   - "Lu-177"
   - "lutetium"
   - "actinium"
+  # B7-H3 radioligands
+  - "131I-omburtamab"
+  - "I-131 omburtamab"

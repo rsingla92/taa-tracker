@@ -62,3 +62,77 @@
     Tests the system on a younger landscape — fewer canonical drugs but
     growing fast. Bispecific + ADC + CAR-T tiers still developing.
   exclude_terms: []
+
+- slug: b7-h3
+  primary_name: B7-H3
+  aliases:
+    - CD276
+    - B7H3
+  uniprot_id: Q5ZPR3
+  hgnc_symbol: CD276
+  ensembl_id: ENSG00000103855
+  indication_tags:
+    - prostate
+    - NSCLC
+    - SCLC
+    - ESCC
+    - neuroblastoma
+    - melanoma
+  notes: >
+    Pan-cancer TAA with overexpression in ~60% of solid tumours and limited
+    normal-tissue expression. Heavy ADC pipeline (ifinatamab/DS-7300, MGC018,
+    HS-20093, YL201) and rapidly expanding paediatric CAR-T (CHOP, Seattle
+    Children's, MSK). One of the most active TAAs of 2024–2026.
+  exclude_terms: []
+
+- slug: 5t4
+  primary_name: 5T4
+  aliases:
+    - TPBG
+    - trophoblast glycoprotein
+    - WAIF1
+  uniprot_id: Q13641
+  hgnc_symbol: TPBG
+  ensembl_id: ENSG00000146242
+  indication_tags:
+    - ovarian
+    - NSCLC
+    - renal
+    - mesothelioma
+    - colorectal
+  notes: >
+    Older oncofoetal antigen — TroVax vaccine era. Quiet for several years,
+    revived by 4-1BB×5T4 bispecific (ALG.APV-527, Alligator/Aptevo) and a
+    new wave of academic CAR-T programs (UCL, Cancer Research UK). Tests
+    the tracker on a thin clinical landscape with academic-heavy preclinical
+    momentum — exactly where preprints + NIH grants matter most.
+  exclude_terms: []
+
+- slug: ror1
+  primary_name: ROR1
+  aliases:
+    - NTRKR1
+    - receptor tyrosine kinase-like orphan receptor 1
+  uniprot_id: Q01973
+  hgnc_symbol: ROR1
+  ensembl_id: ENSG00000185483
+  indication_tags:
+    - CLL
+    - MCL
+    - TNBC
+    - NSCLC
+    - ovarian
+  notes: >
+    Onco-foetal RTK with re-expression in CLL / MCL / many solid tumours.
+    Anchor program: zilovertamab vedotin (Merck/MK-2140 via VelosBio) ADC
+    in Phase 2/3 (waveLINE). CAR-T tier growing (Lyell LYL797, Oncternal
+    ONCT-808). Note: aliases must avoid ROR-gamma / RORγt confounds —
+    "ROR1" itself is unambiguous; "ROR" alone is excluded via exclude_terms.
+  exclude_terms:
+    - ROR-gamma
+    - RORgamma
+    - RORγ
+    - RORγt
+    - RORyt
+    - ROR-gamma-t
+    - RORC

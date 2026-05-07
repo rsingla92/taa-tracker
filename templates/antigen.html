@@ -61,6 +61,8 @@
     {% if open_targets %}<a href="#biology" class="toc-link">Biology</a>{% endif %}
     {% if fda_approvals or ema_approvals %}<a href="#approvals" class="toc-link">Approvals <span class="toc-count">{{ fda_approvals|length + ema_approvals|length }}</span></a>{% endif %}
     {% if abstracts %}<a href="#abstracts" class="toc-link">Abstracts <span class="toc-count">{{ abstract_count }}</span></a>{% endif %}
+    {% if preprints %}<a href="#preprints" class="toc-link">Preprints <span class="toc-count">{{ preprint_count }}</span></a>{% endif %}
+    {% if grants %}<a href="#grants" class="toc-link">NIH grants <span class="toc-count">{{ grant_count }}</span></a>{% endif %}
     {% if news %}<a href="#news" class="toc-link">News <span class="toc-count">{{ news | length }}</span></a>{% endif %}
     <a href="#citations" class="toc-link">Citations <span class="toc-count">{{ citations | length }}</span></a>
   </div>
@@ -375,6 +377,58 @@
 </section>
 {% endif %}
 
+{# ---- Preprints (bioRxiv / medRxiv via Europe PMC) ---- #}
+{% if preprints %}
+<section class="abstracts" id="preprints">
+  <h2>Recent preprints · {{ preprint_count }} on bioRxiv / medRxiv</h2>
+  <p class="meta-text" style="margin-bottom: 16px;">Preprints lead PubMed by 6–18 months for clinical readouts and even longer for academic pre-clinical work.</p>
+  <ul class="news-list">
+    {% for p in preprints %}
+    <li>
+      <a class="news-title" href="{% if p.doi %}https://doi.org/{{ p.doi }}{% else %}#cite-{{ loop.index }}{% endif %}" rel="nofollow noopener">{{ p.title }}</a>
+      <div class="news-meta meta-text">
+        <span class="news-source">{{ p.server }}</span>
+        {% if p.posted_date %}<span class="news-date">{{ p.posted_date.isoformat() }}</span>{% else %}<span class="news-date">{{ p.year }}</span>{% endif %}
+        {% if p.doi %}<span class="mono">{{ p.doi }}</span>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if preprint_count > preprints | length %}<p class="meta-text">+{{ preprint_count - preprints | length }} more preprints indexed</p>{% endif %}
+</section>
+{% endif %}
+
+{# ---- NIH grants (RePORTER) ---- #}
+{% if grants %}
+<section class="abstracts" id="grants">
+  <h2>NIH-funded grants · {{ grant_count }} active in last 5 years</h2>
+  <p class="meta-text" style="margin-bottom: 16px;">US-funded academic pipeline (NCI · NHLBI · NIAID · NIDDK). Leading indicator — IIT trials typically follow grants by 2–4 years.</p>
+  <table class="approvals-table">
+    <thead>
+      <tr>
+        <th style="width: 130px;">Project #</th>
+        <th>Title</th>
+        <th style="width: 180px;">PI</th>
+        <th style="width: 220px;">Organization</th>
+        <th style="width: 80px;">FY</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in grants %}
+      <tr>
+        <td class="mono"><a href="https://reporter.nih.gov/search/?term={{ g.project_num }}" rel="nofollow noopener">{{ g.project_num }}</a></td>
+        <td>{{ g.title }}</td>
+        <td>{{ g.pi_name or '—' }}</td>
+        <td>{{ g.organization or '—' }}</td>
+        <td class="tnum">{{ g.fiscal_year or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if grant_count > grants | length %}<p class="meta-text">+{{ grant_count - grants | length }} more grants indexed</p>{% endif %}
+</section>
+{% endif %}
+
 {# ---- Recent news (RSS aggregation) ---- #}
 {% if news %}
 <section class="news" id="news">
@@ -403,7 +457,7 @@
     Showing the <strong>{{ citations | length }}</strong> source{% if citations | length != 1 %}s{% endif %}
     cited inline above.
     Underlying dataset for {{ antigen.primary_name }}: <strong>{{ total_sources }}</strong> records pulled from
-    {{ freshness | length }} sources (CT.gov, PubMed, OpenAlex, EDGAR, Open Targets, news, FDA, EMA, abstracts).
+    {{ freshness | length }} sources (CT.gov, PubMed, OpenAlex, EDGAR, Open Targets, news, FDA, EMA, abstracts, preprints, NIH grants).
   </p>
   <ol class="cite-list">
     {% for c in citations %}

@@ -145,6 +145,39 @@ class ConferenceAbstract(BaseModel):
     abstract_number: str | None = None
 
 
+class Preprint(BaseModel):
+    """A bioRxiv / medRxiv preprint, sourced via Europe PMC.
+
+    Preprints lead PubMed by 6–18 months for clinical-stage readouts and even
+    longer for academic CAR-T / ADC preclinical work. We surface them as a
+    distinct stream because BD readers value the leading-indicator nature.
+    """
+
+    doi: str | None = None
+    title: str
+    year: int
+    server: str  # "bioRxiv" or "medRxiv"
+    posted_date: date | None = None
+
+
+class Grant(BaseModel):
+    """An NIH-funded grant from RePORTER. Preclinical / translational signal.
+
+    Captures the academic pipeline that doesn't show up in CT.gov or EDGAR —
+    especially relevant for CAR-T / ADC targets where academic centers run
+    early-stage IIT programs years before a sponsor picks them up.
+    """
+
+    project_num: str  # e.g., "5R01CA123456-03"
+    title: str
+    pi_name: str | None = None
+    organization: str | None = None
+    fiscal_year: int | None = None
+    award_amount: int | None = None  # USD
+    project_start: date | None = None
+    project_end: date | None = None
+
+
 class Program(BaseModel):
     """A canonical drug development effort against one antigen with one modality.
 
@@ -173,7 +206,17 @@ class SourceFreshness(BaseModel):
     """Per-source freshness metadata for the stale-data UX."""
 
     source: Literal[
-        "ctgov", "pubmed", "openalex", "edgar", "opentargets", "news", "fda", "ema", "abstracts"
+        "ctgov",
+        "pubmed",
+        "openalex",
+        "edgar",
+        "opentargets",
+        "news",
+        "fda",
+        "ema",
+        "abstracts",
+        "preprints",
+        "reporter",
     ]
     last_success: datetime | None = None
     last_attempt: datetime
@@ -296,6 +339,8 @@ class AntigenData(BaseModel):
     fda_approvals: list[FDAApproval] = Field(default_factory=list)
     ema_approvals: list[EMAApproval] = Field(default_factory=list)
     abstracts: list[ConferenceAbstract] = Field(default_factory=list)
+    preprints: list[Preprint] = Field(default_factory=list)
+    grants: list[Grant] = Field(default_factory=list)
     generated_at: datetime
 
 

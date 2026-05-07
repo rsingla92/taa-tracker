@@ -98,6 +98,10 @@ def render_antigen(
         ema_approvals=data.ema_approvals,
         abstracts=data.abstracts[:10],
         abstract_count=len(data.abstracts),
+        preprints=data.preprints[:10],
+        preprint_count=len(data.preprints),
+        grants=data.grants[:10],
+        grant_count=len(data.grants),
         paper_count=len(data.papers),
         filing_count=len(data.filings),
     )
