@@ -1,0 +1,78 @@
+# Target Product Profile — ROR1
+# Hand-curated. Reflects the current emerging benchmark: zilovertamab vedotin
+# (MK-2140 / VLS-101) — the only ROR1 program in late-stage development. Merck
+# acquired VelosBio (the originator) in 2020 specifically for this asset; the
+# waveLINE programme is positioning it for r/r DLBCL and r/r MCL. No ROR1 drug
+# is approved as of curation date.
+# Source data: ASH 2023 / 2024 disclosures, NCT records for the waveLINE
+# trials, Merck pipeline communications, VelosBio Phase 1 publications.
+
+indication: "Relapsed/refractory diffuse large B-cell lymphoma (r/r DLBCL) and mantle cell lymphoma (r/r MCL); also CLL, MZL"
+leading_modality: adc
+leading_drug: "Zilovertamab vedotin (MK-2140 / VLS-101)"
+leading_sponsor: "Merck (acquired VelosBio 2020)"
+mechanism: "ROR1-directed antibody-drug conjugate. Humanized anti-ROR1 IgG1 mAb (cirmtuzumab-derived) linked via a cleavable valine-citrulline linker to monomethyl auristatin E (MMAE), a microtubule inhibitor. DAR ~4. Same vedotin payload as Adcetris."
+
+pivotal_trial: "waveLINE-007 (NCT05405309) Phase 2 in r/r DLBCL · waveLINE-003 (NCT04501939) Phase 2 in r/r MCL"
+pivotal_trial_url: "https://clinicaltrials.gov/study/NCT05405309"
+
+primary_endpoints:
+  - name: ORR (r/r DLBCL, post-CAR-T eligible)
+    metric: "~32–53% across Phase 1 expansion cohorts"
+    comparator: "Heavily-pretreated DLBCL post anti-CD20 ± CAR-T; loncastuximab tesirine ORR ~48% in similar setting"
+    citation_url: "https://ash.confex.com/ash/2023/webprogram/Paper176895.html"
+  - name: ORR (r/r MCL)
+    metric: "~50%+ at active dose levels (Phase 1 expansion)"
+    comparator: "Post-BTKi MCL has historical ORR ~25–40% with chemotherapy"
+
+secondary_endpoints:
+  - name: DCR (DLBCL)
+    metric: "Maturing — ~70%+ at active doses"
+  - name: mPFS
+    metric: "Pending confirmatory readouts"
+  - name: DoR (median)
+    metric: "Pending confirmatory readouts"
+
+safety:
+  common_aes:
+    - "Peripheral neuropathy (MMAE class effect)"
+    - "Fatigue"
+    - "Diarrhoea"
+    - "Neutropenia"
+    - "Decreased appetite"
+  aes_of_special_interest:
+    - "Peripheral sensory and motor neuropathy — dose-modifying; cumulative with MMAE"
+    - "Neutropenia / febrile neutropenia"
+    - "Infusion-related reactions"
+  discontinuation_rate: "~10–15% (preliminary, Phase 1 / early Phase 2)"
+  boxed_warning: null  # not yet labelled — pending approval
+
+dosing:
+  regimen: "2.5 mg/kg IV every 3 weeks (recommended Phase 2 dose)"
+  route: "IV infusion"
+  line_of_therapy: "r/r DLBCL post anti-CD20 ± CAR-T; r/r MCL post-BTKi; r/r CLL post-BTKi/BCL2i"
+  biomarker_selection: "ROR1 expression IHC under evaluation; not required for trial entry (ROR1 broadly expressed in B-cell malignancies)"
+  half_life: "~3–5 days (vedotin class)"
+
+differentiation:
+  - "Only ROR1 ADC in registrational-stage development globally"
+  - "Targets a pan-B-cell malignancy antigen with limited normal-tissue expression in adults (re-expressed onco-foetally)"
+  - "Active in CAR-T-refractory DLBCL — fills a real unmet need post-axi-cel / liso-cel failure"
+  - "Merck commercial infrastructure → fastest path to global launch among ROR1 programmes"
+
+unmet_need:
+  - "Post-CAR-T DLBCL has limited late-line options; current standards (loncastuximab, polatuzumab combos, bispecifics) all have caveats"
+  - "BTKi-refractory MCL has poor outcomes — covalent and non-covalent BTKi failure leaves few options"
+  - "ROR1+ solid tumours (TNBC, NSCLC, ovarian) under-explored — heme-first dev focus leaves solid opportunity for follow-on programs"
+  - "Peripheral neuropathy from MMAE constrains long-term dosing in pts who could otherwise have prolonged response"
+
+competitive_pressure:
+  - "NBE-002 (Boehringer Ingelheim) — ROR1 anthracycline ADC; differentiated payload class"
+  - "LCB71 / CS5001 (LegoChem Bio / CStone) — Phase 1 ROR1 ADC with novel linker chemistry"
+  - "Lyell LYL797 — ROR1 CAR-T in Phase 1 for solid tumours (TNBC, NSCLC); different mechanism, complementary"
+  - "Oncternal ONCT-808 — ROR1 CAR-T (originally cirmtuzumab Phase 1 backbone); orphan-drug positioning"
+  - "Cirmtuzumab + ibrutinib (Oncternal) — naked mAb combo in CLL/MCL; lower bar than ADC"
+  - "NVG-111 (NovalGen) — ROR1 × CD3 bispecific; first-in-class T-cell engager for ROR1"
+
+last_curated: 2026-05-07
+curator_notes: "Endpoint numbers reflect Phase 1 / early Phase 2 disclosures; will firm up as waveLINE-007 (DLBCL) and waveLINE-003 (MCL) mature. The MMAE peripheral neuropathy profile is the key open differentiation question vs. NBE-002 (anthracycline) and LCB71. Refresh when Merck files BLA (target window: 2026–2027)."

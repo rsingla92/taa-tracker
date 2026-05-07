@@ -9,13 +9,18 @@ SPOREs, U54 networks) that won't show up in CT.gov for years. For TAAs with
 heavy academic CAR-T / ADC activity (B7-H3, ROR1, 5T4) this is leading-indicator
 signal — university labs file IND a few years after grants land.
 
-Search strategy: POST /v2/projects/search with terms scoped to project_title +
-abstract_text + terms field. We restrict to active fiscal years (last 5) and
-oncology-relevant institutes (NCI, NHLBI for heme, NIAID for immune-oncology
-crossovers).
+Search strategy: POST /v2/projects/search with `search_field=projecttitle,terms`,
+then post-filter the API response to require an antigen alias appear in the
+project title. The two-step matters: RePORTER's `terms` field is RCDC-curated
+and tags broad CAR-T / immunotherapy grants with every TAA they touch, so a
+raw search returns many "is about CAR-T platform, mentions B7-H3 in passing"
+hits. Title-mention is the deterministic signal that the grant is *about* the
+antigen, not just adjacent to it. We restrict to active fiscal years (last 5)
+and oncology-relevant institutes (NCI, NHLBI, NIAID, NIDDK).
 """
 
 import asyncio
+import re
 from datetime import date, datetime, timezone
 from typing import Any
 
@@ -27,7 +32,7 @@ REPORTER_API = "https://api.reporter.nih.gov/v2/projects/search"
 TIMEOUT_S = 45  # NIH RePORTER can be slow on large queries
 RETRY_ATTEMPTS = 3
 RETRY_BACKOFF_S = 2.5
-MAX_RESULTS = 100
+MAX_RESULTS = 200  # raised because we post-filter heavily on title-mention
 USER_AGENT = "TAA Tracker (rsingla92+taa-tracker@gmail.com)"
 
 # Oncology-relevant institute codes. NCI is the main one; NHLBI funds heme
@@ -64,11 +69,16 @@ async def fetch(antigen: Antigen, citation_id_start: int = 1) -> ReporterResult:
     current_year = datetime.now(timezone.utc).year
     fiscal_years = list(range(current_year - 4, current_year + 1))
 
+    # search_field=projecttitle,terms (NOT abstracttext) — abstract text matches
+    # are too loose for short/common aliases ("B7-H3" appears in many CAR-T
+    # abstracts as part of a TAA list without the grant being *about* B7-H3).
+    # Title + RCDC terms gives strong-relevance hits; if a target is genuinely
+    # the topic of the grant it'll show up there.
     payload: dict[str, Any] = {
         "criteria": {
             "advanced_text_search": {
                 "operator": "and",
-                "search_field": "projecttitle,terms,abstracttext",
+                "search_field": "projecttitle,terms",
                 "search_text": search_text,
             },
             "fiscal_years": fiscal_years,
@@ -90,6 +100,15 @@ async def fetch(antigen: Antigen, citation_id_start: int = 1) -> ReporterResult:
                 source="reporter", last_attempt=attempt_at, error=f"{type(e).__name__}: {e}"
             ),
         )
+
+    # Post-filter: keep only grants where the antigen alias appears in the
+    # project title. RePORTER's RCDC `terms` field tags many CAR-T / IO grants
+    # with multiple TAAs even when those antigens are tangential to the grant's
+    # actual aim. Title-mention is the cleaner deterministic signal.
+    title_pattern = re.compile(
+        r"\b(" + "|".join(re.escape(a) for a in aliases) + r")\b", re.IGNORECASE
+    )
+    results = [r for r in results if title_pattern.search(r.get("project_title") or "")]
 
     grants, citations = _normalize(results, citation_id_start, attempt_at)
     return ReporterResult(

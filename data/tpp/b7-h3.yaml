@@ -1,0 +1,76 @@
+# Target Product Profile — B7-H3 (CD276)
+# Hand-curated. Reflects the current emerging benchmark: ifinatamab deruxtecan
+# (DS-7300 / I-DXd) is the most-advanced B7-H3 program (Phase 2/3, Daiichi
+# Sankyo) and has set the dose / payload / safety frame the rest of the field
+# is now calibrating against. No B7-H3 drug is approved as of curation date.
+# Source data: WCLC 2023, ESMO 2024, IDeate-Lung01 disclosures, FDA / EMA
+# pipeline communications, MacroGenics & Daiichi pipeline updates.
+
+indication: "Relapsed/refractory extensive-stage small-cell lung cancer (ES-SCLC), 2L+; expanding into mCRPC, ESCC, and other B7-H3-high solid tumours"
+leading_modality: adc
+leading_drug: "Ifinatamab deruxtecan (DS-7300 / I-DXd)"
+leading_sponsor: "Daiichi Sankyo (originated at MacroGenics)"
+mechanism: "B7-H3-directed antibody-drug conjugate. Humanized anti-B7-H3 IgG1 mAb (enoblituzumab-derived backbone) linked via a cleavable tetrapeptide linker to a topoisomerase I inhibitor payload (DXd). DAR ~4. Same DXd payload class as T-DXd / Dato-DXd."
+
+pivotal_trial: "IDeate-Lung01 (NCT05280470) · IDeate-PanTumor01 (NCT04145622)"
+pivotal_trial_url: "https://clinicaltrials.gov/study/NCT05280470"
+
+primary_endpoints:
+  - name: ORR (ES-SCLC, 2L+)
+    metric: "~52–55% at 12 mg/kg"
+    comparator: "vs ~14–25% historical for topotecan / lurbinectedin"
+    citation_url: "https://www.daiichisankyo.com/files/news/pressrelease/pdf/202410/20241012_E.pdf"
+  - name: ORR (mCRPC, post-novel hormonal)
+    metric: "~30%+ at active dose levels (Phase 1/2 IDeate-PanTumor01)"
+    comparator: "Heavily-pretreated CRPC with limited PSA/RECIST options"
+
+secondary_endpoints:
+  - name: DCR (ES-SCLC)
+    metric: "~85–90%"
+  - name: mPFS (ES-SCLC)
+    metric: "~5–6 months"
+  - name: DoR (median, ES-SCLC)
+    metric: "Maturing; ~4–5 months at interim"
+
+safety:
+  common_aes:
+    - "Nausea / vomiting (DXd class)"
+    - "Fatigue"
+    - "Decreased appetite"
+    - "Anaemia"
+    - "Neutropenia"
+  aes_of_special_interest:
+    - "ILD / pneumonitis (DXd class effect; ~5–10% any-grade reported in ES-SCLC cohort)"
+    - "Cytopenias requiring dose modification"
+    - "Infusion-related reactions"
+  discontinuation_rate: "~10–15% (any-cause AE; preliminary)"
+  boxed_warning: null  # not yet labelled — pending approval
+
+dosing:
+  regimen: "12 mg/kg IV every 3 weeks (recommended Phase 2 dose)"
+  route: "IV infusion"
+  line_of_therapy: "2L+ ES-SCLC post-platinum/IO; CRPC post-novel hormonal therapy"
+  biomarker_selection: "B7-H3 expression IHC under evaluation as enrichment; not yet required for trial entry"
+  half_life: "~5–6 days (DXd-class)"
+
+differentiation:
+  - "First B7-H3 ADC to show registrational-grade activity in ES-SCLC — a tumour type with almost no late-line options"
+  - "DXd payload + bystander effect → activity expected on heterogeneous B7-H3 expression"
+  - "Pan-tumour development plan (ES-SCLC, mCRPC, ESCC, NSCLC) leveraging B7-H3's broad solid-tumour expression"
+  - "Daiichi commercial infrastructure built on T-DXd → fastest path to global launch in the B7-H3 field"
+
+unmet_need:
+  - "ES-SCLC 2L+ has historically had ORR <20% with topotecan / lurbinectedin and OS <8 months"
+  - "B7-H3 is broadly expressed across paediatric solid tumours (neuroblastoma, DIPG) where adult ADC dosing strategies need adaptation"
+  - "ILD class risk for DXd payload requires careful pulmonary monitoring; ES-SCLC patients often have baseline lung disease"
+  - "Resistance / B7-H3 antigen-loss biology not yet characterized — biomarker work is early"
+
+competitive_pressure:
+  - "MGC018 / vobramitamab duocarmazine (MacroGenics → Eisai) — Phase 2 in mCRPC; duocarmycin payload"
+  - "HS-20093 (Hansoh) — Phase 1/2 in ES-SCLC; rapid China-led development"
+  - "YL201 / DB-1311 (MediLink / DualityBio) — emerging Phase 1 ADCs with novel linker / payload chemistries"
+  - "Paediatric CAR-T programs (CHOP, Seattle Children's, MSK IIT) — different mechanism; race for first-to-approval in DIPG / neuroblastoma"
+  - "Enoblituzumab (MGA271, MacroGenics) — naked mAb stalled; signals that monotherapy mAb is sub-additive vs. ADC"
+
+last_curated: 2026-05-07
+curator_notes: "Endpoints are interim; numbers will firm up as IDeate-Lung01 Phase 2 matures and IDeate-Lung02 Phase 3 begins. Refresh when Daiichi files BLA (target window: 2026–2027)."

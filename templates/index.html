@@ -25,7 +25,7 @@
     <tbody>
       {% for d in antigens %}
       <tr>
-        <td><a href="/{{ d.antigen.slug }}.html"><strong>{{ d.antigen.primary_name }}</strong></a></td>
+        <td><a href="{{ d.antigen.slug }}.html"><strong>{{ d.antigen.primary_name }}</strong></a></td>
         <td class="meta-text">{{ d.antigen.aliases | join(', ') }}</td>
         <td class="tnum">{{ d.programs | length }}</td>
         <td class="meta-text">
