@@ -1,0 +1,97 @@
+# Curated oncology / biotech conference calendar — drives the "upcoming
+# catalysts" view. Each entry is one meeting where TAA data routinely drops.
+#
+# Schema:
+#   name:         display name
+#   start_date:   first day (YYYY-MM-DD)
+#   end_date:     last day (YYYY-MM-DD)
+#   location:     city
+#   url:          official meeting page (for citation)
+#   relevance:    list of indication tags this meeting reliably covers — used
+#                 to filter per-antigen ("ovarian" meetings won't surface on a
+#                 heme-only antigen). Empty list = surface for all antigens.
+#
+# Curated 2026-05; refresh annually. Dates verified against official society
+# pages where available. Beyond ~18mo the schedule is speculative — keep entries
+# concrete and remove anything that slips into "TBD".
+
+- name: ASCO 2026 Annual Meeting
+  start_date: 2026-05-29
+  end_date: 2026-06-02
+  location: Chicago, IL
+  url: https://meetings.asco.org/
+  relevance: []  # surface for every antigen
+
+- name: ESMO 2026 Congress
+  start_date: 2026-10-16
+  end_date: 2026-10-20
+  location: Copenhagen, Denmark
+  url: https://www.esmo.org/meetings
+  relevance: []
+
+- name: SITC 2026 Annual Meeting
+  start_date: 2026-11-04
+  end_date: 2026-11-08
+  location: Houston, TX
+  url: https://www.sitcancer.org/2026
+  relevance: []
+
+- name: SABCS 2026
+  start_date: 2026-12-08
+  end_date: 2026-12-11
+  location: San Antonio, TX
+  url: https://www.sabcs.org/
+  relevance:
+    - breast
+    - TNBC
+
+- name: ASH 2026 Annual Meeting
+  start_date: 2026-12-05
+  end_date: 2026-12-08
+  location: Orlando, FL
+  url: https://www.hematology.org/meetings/annual-meeting
+  relevance:
+    - heme
+    - multiple myeloma
+    - CLL
+    - MCL
+    - DLBCL
+    - leukemia
+    - lymphoma
+
+- name: ASCO GI 2027 Symposium
+  start_date: 2027-01-21
+  end_date: 2027-01-23
+  location: San Francisco, CA
+  url: https://meetings.asco.org/
+  relevance:
+    - gastric
+    - GEJ
+    - pancreatic
+    - colorectal
+    - biliary tract
+    - HCC
+
+- name: ASCO GU 2027 Symposium
+  start_date: 2027-02-11
+  end_date: 2027-02-13
+  location: San Francisco, CA
+  url: https://meetings.asco.org/
+  relevance:
+    - prostate
+    - urothelial
+    - renal
+
+- name: AACR 2027 Annual Meeting
+  start_date: 2027-04-17
+  end_date: 2027-04-21
+  location: Washington, DC
+  url: https://www.aacr.org/meeting/aacr-annual-meeting-2027/
+  relevance: []
+
+- name: ASCO 2027 Annual Meeting
+  start_date: 2027-05-28
+  end_date: 2027-06-01
+  location: Chicago, IL
+  url: https://meetings.asco.org/
+  relevance: []

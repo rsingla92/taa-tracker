@@ -9,6 +9,9 @@
   <div class="hero-meta">
     <span class="meta-text">{{ antigens | length }} antigen{% if antigens | length != 1 %}s{% endif %} tracked · refreshed weekly · open-source</span>
   </div>
+  {% if commentary %}
+  <p class="index-commentary">{{ commentary }}</p>
+  {% endif %}
 </section>
 
 <section style="margin-top: 48px;">

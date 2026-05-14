@@ -118,12 +118,16 @@ a:hover { border-color: var(--accent); }
 .theme-toggle {
   background: none; border: 1px solid var(--border-strong); border-radius: 2px;
   padding: 6px 10px; font: inherit; font-size: 13px; color: var(--text); cursor: pointer;
+  margin-left: auto;  /* keeps toggle pinned right even when .as-of is absent (index page) */
 }
+/* When both .as-of and .theme-toggle are present, .as-of already consumes the
+   auto-margin so .theme-toggle's auto becomes a no-op — only the gap separates. */
+.as-of + .theme-toggle { margin-left: 0; }
 .theme-toggle:hover { border-color: var(--text); }
 
 /* ===== Main wrapper ===== */
 .shell { max-width: 1280px; margin: 0 auto; padding: 0 32px 96px; }
-section + section { margin-top: 64px; }
+section + section, section + details, details + section, details + details { margin-top: 64px; }
 
 /* ===== Stale-source banner ===== */
 .stale-banner {
@@ -369,6 +373,23 @@ table.programs td.tnum { font-family: var(--font-mono); font-feature-settings: "
 table.programs td.cite-cell { font-size: 11px; line-height: 1.4; }
 table.programs td.cite-cell .cite { display: inline-block; margin-right: 4px; vertical-align: baseline; }
 table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
+
+/* Cap program table height — keeps ~5-6 rows visible, the rest behind a scroll.
+   .programs-scroll-overflow is only applied when group size > 5 in the template. */
+.programs-scroll-overflow {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+}
+.programs-scroll-overflow table.programs { border-collapse: separate; }
+.programs-scroll-overflow table.programs thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
 
 /* ===== Phase pills + status indicators ===== */
 .phase-pill {
@@ -694,16 +715,19 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
 .agency-fda { background: #1B2541; }
 .agency-ema { background: #5B3F67; }
 
-/* ===== Conference abstracts (shares some news styling) ===== */
+/* ===== Conference abstracts / preprints / grants (shares news styling) ===== */
 .abstracts {
   margin-top: 56px;
 }
 .abstracts h2 {
-  font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--muted);
-  margin: 0 0 16px;
-  font-family: var(--font-body);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  font-variation-settings: "opsz" 36;
+  margin: 0 0 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-strong);
+  letter-spacing: -0.01em;
 }
 
 /* ===== News section ===== */
@@ -711,11 +735,14 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   margin-top: 56px;
 }
 .news h2 {
-  font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--muted);
-  margin: 0 0 16px;
-  font-family: var(--font-body);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  font-variation-settings: "opsz" 36;
+  margin: 0 0 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-strong);
+  letter-spacing: -0.01em;
 }
 .news-list { list-style: none; padding: 0; margin: 0; }
 .news-list li {
@@ -742,6 +769,490 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   font-size: 13px !important;
   line-height: 1.45;
 }
+
+/* ===== Catalysts (v0.3) — forward-looking event table ===== */
+.catalysts {
+  margin-top: 56px;
+}
+.catalysts h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  font-variation-settings: "opsz" 36;
+  margin: 0 0 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.catalysts-subtitle {
+  font-size: 13px !important;
+  max-width: 720px;
+  margin: 0 0 16px !important;
+  line-height: 1.55;
+}
+.catalysts-subtitle .mono {
+  font-family: var(--font-mono);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 11px;
+}
+.catalysts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.catalysts-table th {
+  text-align: left;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.catalysts-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.45;
+}
+.catalysts-table tr:last-child td { border-bottom: none; }
+.catalysts-table tr:hover td { background: var(--bg); }
+.catalysts-table .catalyst-date {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+  font-size: 13px;
+  white-space: nowrap;
+}
+.catalyst-tilde { color: var(--muted); margin-right: 1px; }
+.catalysts-table .catalyst-when { font-size: 12px; }
+.catalyst-anticipated .catalyst-date { color: var(--text); }
+.catalyst-anticipated .catalyst-when { font-style: italic; }
+.catalyst-title {
+  font-weight: 500;
+  color: var(--text);
+  border: none;
+  font-size: 14px;
+}
+.catalyst-title:hover { color: var(--accent); border-bottom: 1px solid var(--accent); }
+.catalyst-detail {
+  font-size: 12px !important;
+  margin-top: 3px;
+}
+.catalyst-sponsor { font-size: 12px; }
+.catalyst-kind-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.catalyst-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  background: var(--muted);
+}
+/* Kind dots — use semantic palette (not modality colors) */
+.catalyst-kind-trial_completion .catalyst-dot { background: var(--info); }
+.catalyst-kind-conference .catalyst-dot { background: var(--warning); }
+.catalyst-kind-readout_guidance .catalyst-dot { background: var(--active); }
+
+/* ===== Watch list — AI-curated top catalyst picks (v0.3.1) ================== */
+.catalyst-watchlist {
+  margin: 20px 0 28px;
+  padding: 20px 24px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--active);
+  border-radius: 2px;
+}
+.watchlist-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--active);
+  margin-bottom: 12px;
+}
+.watchlist-picks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: watchpick;
+}
+.watchlist-picks li {
+  counter-increment: watchpick;
+  padding: 12px 0 12px 32px;
+  position: relative;
+  border-top: 1px solid var(--border);
+}
+.watchlist-picks li:first-child { border-top: none; padding-top: 4px; }
+.watchlist-picks li::before {
+  content: counter(watchpick);
+  position: absolute;
+  left: 0;
+  top: 14px;
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 36;
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--active);
+  line-height: 1;
+  width: 22px;
+  text-align: right;
+}
+.watchlist-picks li:first-child::before { top: 6px; }
+.watchlist-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+.watchlist-date {
+  color: var(--muted);
+  font-size: 12px;
+}
+.watchlist-kind {
+  font-size: 10px !important;
+}
+.watchlist-sponsor {
+  font-size: 11px !important;
+}
+.watchlist-title {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+.watchlist-title a {
+  color: var(--text);
+  border: none;
+}
+.watchlist-title a:hover { color: var(--accent); border-bottom: 1px solid var(--accent); }
+.watchlist-reason {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 0;
+  font-style: italic;
+}
+.watchlist-foot {
+  margin-top: 12px !important;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11px !important;
+}
+
+/* Catalyst annotation (v0.3.1) — italic AI gloss inside the catalyst table */
+.catalyst-annotation {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+  font-style: italic;
+  margin-top: 6px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border-strong);
+}
+
+/* Per-modality micro-narrative (v0.3.1) — one short paragraph above each table */
+.modality-narrative {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  max-width: 760px;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+/* Index page cross-antigen commentary (v0.3.1) */
+.index-commentary {
+  max-width: 760px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 24px 0 0;
+}
+
+/* ===== Collapsible <details> sections (v0.3.1) ============================== */
+/* Native <details> with custom chevron, no default triangle marker. */
+details.section-collapsible {
+  margin-top: 56px;
+}
+details.section-collapsible > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid var(--border-strong);
+  padding-bottom: 12px;
+  margin-bottom: 6px;
+  transition: color 100ms ease-out;
+}
+details.section-collapsible > summary::-webkit-details-marker { display: none; }
+details.section-collapsible > summary::marker { content: ""; }
+details.section-collapsible > summary::after {
+  content: "›";
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 150ms ease-out;
+  transform: rotate(90deg);
+  font-family: var(--font-display);
+}
+details.section-collapsible[open] > summary::after { transform: rotate(-90deg); }
+details.section-collapsible > summary h2 {
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* ===== Historic timeline (v0.3) — unified retrospective view ===== */
+.timeline-section {
+  margin-top: 56px;
+}
+.timeline-section > summary h2,
+.timeline-section h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  font-variation-settings: "opsz" 36;
+  margin: 0 0 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-strong);
+  letter-spacing: -0.01em;
+}
+details.timeline-section > summary h2 {
+  padding-bottom: 0;
+  border-bottom: none;
+  margin: 0;
+}
+
+/* Timeline filter chips + density toggle */
+.timeline-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 20px 0 16px;
+}
+.timeline-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.timeline-filter-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.tl-chip {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color 100ms ease-out, border-color 100ms ease-out, background 100ms ease-out;
+}
+.tl-chip:hover { color: var(--text); border-color: var(--text); }
+.tl-chip.is-active { color: var(--text); border-color: var(--text); }
+.tl-chip.tl-chip-approval.is-active { color: var(--active); border-color: var(--active); background: color-mix(in srgb, var(--active) 8%, var(--surface)); }
+.tl-chip.tl-chip-filing.is-active   { color: var(--info);   border-color: var(--info);   background: color-mix(in srgb, var(--info) 8%, var(--surface)); }
+.tl-chip.tl-chip-abstract.is-active { color: var(--warning); border-color: var(--warning); background: color-mix(in srgb, var(--warning) 8%, var(--surface)); }
+.tl-chip.tl-chip-preprint.is-active { color: color-mix(in srgb, var(--warning) 70%, var(--muted)); border-color: color-mix(in srgb, var(--warning) 70%, var(--muted)); }
+.tl-chip.tl-chip-grant.is-active    { color: var(--success); border-color: var(--success); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.tl-chip.tl-chip-news.is-active     { color: var(--muted);  border-color: var(--muted); }
+.tl-chip.tl-chip-trial_update.is-active { color: var(--info); border-color: var(--info); }
+.timeline-density-toggle {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  padding: 4px 12px;
+  border-radius: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.timeline-density-toggle:hover { border-color: var(--text); }
+.timeline-density-toggle[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.timeline-subtitle {
+  font-size: 13px !important;
+  max-width: 720px;
+  margin: 0 0 24px !important;
+  line-height: 1.55;
+}
+.timeline-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  max-width: 900px;
+}
+/* Vertical rail — 1px hairline at left, runs the full length */
+.timeline-list::before {
+  content: "";
+  position: absolute;
+  left: 88px;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: var(--border-strong);
+}
+.timeline-year-marker {
+  position: relative;
+  margin: 24px 0 12px;
+  padding-left: 112px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  font-variation-settings: "opsz" 36;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.timeline-year-marker:first-child { margin-top: 0; }
+.timeline-year-marker::before {
+  content: "";
+  position: absolute;
+  left: 82px;
+  top: 14px;
+  width: 13px;
+  height: 1px;
+  background: var(--text);
+}
+.timeline-item {
+  position: relative;
+  padding: 12px 0 12px 112px;
+  display: block;
+  min-height: 36px;
+}
+.timeline-item + .timeline-item { border-top: 1px solid var(--border); }
+.timeline-date {
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 76px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+  font-size: 12px;
+  color: var(--muted);
+}
+.timeline-dot {
+  position: absolute;
+  left: 84px;
+  top: 18px;
+  width: 9px;
+  height: 9px;
+  background: var(--bg);
+  border: 1.5px solid var(--muted);
+  border-radius: 50%;
+  display: block;
+}
+/* Kind-coded dots — semantic palette only */
+.timeline-kind-news .timeline-dot { border-color: var(--muted); }
+.timeline-kind-filing .timeline-dot { border-color: var(--info); }
+.timeline-kind-approval .timeline-dot {
+  border-color: var(--active);
+  background: var(--active);
+}
+.timeline-kind-abstract .timeline-dot { border-color: var(--muted); }
+.timeline-kind-preprint .timeline-dot { border-color: var(--muted); }
+.timeline-kind-grant .timeline-dot { border-color: var(--muted); }
+.timeline-kind-trial_update .timeline-dot { border-color: var(--info); }
+
+.timeline-body {
+  display: block;
+  line-height: 1.45;
+}
+
+/* Per-event colored kind chip — replaces the old uppercase-label eyebrow.
+   Colors mirror the catalysts dot palette so the page reads consistently. */
+.timeline-chip {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 2px;
+  margin-right: 10px;
+  vertical-align: 1px;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 12%, var(--surface));
+  color: var(--muted);
+  white-space: nowrap;
+}
+.timeline-kind-approval     .timeline-chip { color: var(--active); }
+.timeline-kind-filing       .timeline-chip { color: var(--info); }
+.timeline-kind-abstract     .timeline-chip { color: var(--warning); }
+.timeline-kind-preprint     .timeline-chip { color: color-mix(in srgb, var(--warning) 70%, var(--muted)); }
+.timeline-kind-grant        .timeline-chip { color: var(--success); }
+.timeline-kind-news         .timeline-chip { color: var(--muted); }
+.timeline-kind-trial_update .timeline-chip { color: var(--info); }
+
+/* Condensed list: hide the meta row, tighten vertical rhythm */
+.timeline-list.is-condensed .timeline-meta { display: none; }
+.timeline-list.is-condensed .timeline-item { padding-top: 8px; padding-bottom: 8px; min-height: 28px; }
+.timeline-list.is-condensed .timeline-date { top: 10px; }
+.timeline-list.is-condensed .timeline-dot { top: 14px; }
+
+/* Filter: hide items whose data-tl-item isn't in the active set */
+.timeline-list[data-tl-active] .timeline-item { display: none; }
+.timeline-list[data-tl-active*="|approval|"]     .timeline-item[data-tl-item="approval"]     { display: block; }
+.timeline-list[data-tl-active*="|filing|"]       .timeline-item[data-tl-item="filing"]       { display: block; }
+.timeline-list[data-tl-active*="|abstract|"]     .timeline-item[data-tl-item="abstract"]     { display: block; }
+.timeline-list[data-tl-active*="|preprint|"]     .timeline-item[data-tl-item="preprint"]     { display: block; }
+.timeline-list[data-tl-active*="|grant|"]        .timeline-item[data-tl-item="grant"]        { display: block; }
+.timeline-list[data-tl-active*="|news|"]         .timeline-item[data-tl-item="news"]         { display: block; }
+.timeline-list[data-tl-active*="|trial_update|"] .timeline-item[data-tl-item="trial_update"] { display: block; }
+.timeline-title {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+  border: none;
+  line-height: 1.4;
+}
+.timeline-title:hover { color: var(--accent); border-bottom: 1px solid var(--accent); }
+.timeline-meta {
+  font-size: 12px !important;
+  margin-top: 3px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.timeline-source { font-weight: 500; }
+.timeline-detail { color: var(--muted); }
 
 /* ===== Synthesis paragraph (LLM narrative, citation-grounded) ===== */
 .synthesis {
@@ -872,6 +1383,11 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   .page-toc { display: none; }  /* TOC anchors useless on paper */
   .stale-banner { display: none; }
   .news, .abstracts { display: none; }  /* low signal-to-print-cost on paper */
+  .timeline-section { display: none; }  /* huge on paper; catalysts is the keeper */
+  .catalysts { page-break-inside: auto; }
+  .catalysts-table { font-size: 9pt; }
+  .catalysts-table th { background: #f4f4f4; }
+  .catalysts-table tr { page-break-inside: avoid; }
   .app-footer { font-size: 10px; }
 
   /* Maximize content width */
@@ -933,4 +1449,17 @@ table.programs td.sponsors-cell { color: var(--muted); font-size: 13px; }
   .tpp-strategic { grid-template-columns: 1fr; }
   .bio-grid { grid-template-columns: 1fr; }
   .modality-toc { font-size: 12px; }
+
+  /* Catalysts table — collapse Sponsor column on narrow viewports */
+  .catalysts-table { font-size: 13px; }
+  .catalysts-table .catalyst-sponsor { display: none; }
+  .catalysts-table th:last-child { display: none; }
+
+  /* Timeline — pull rail in tight on mobile */
+  .timeline-list::before { left: 64px; }
+  .timeline-year-marker { padding-left: 84px; }
+  .timeline-year-marker::before { left: 58px; width: 11px; }
+  .timeline-item { padding-left: 84px; }
+  .timeline-date { width: 52px; font-size: 11px; }
+  .timeline-dot { left: 60px; }
 }

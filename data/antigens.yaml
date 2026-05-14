@@ -136,3 +136,32 @@
     - RORyt
     - ROR-gamma-t
     - RORC
+
+- slug: b7-h4
+  primary_name: B7-H4
+  aliases:
+    - VTCN1
+    - B7H4
+    - B7x
+    - B7S1
+    - B7h.5
+  uniprot_id: Q7Z7D3
+  hgnc_symbol: VTCN1
+  ensembl_id: ENSG00000134258
+  indication_tags:
+    - breast
+    - ovarian
+    - endometrial
+    - NSCLC
+    - biliary tract
+  notes: >
+    Immune checkpoint + TAA, overexpressed in ~70% of breast / ovarian /
+    endometrial tumours with restricted normal-tissue expression. Anchor
+    program: AZD8205 / puxitatug samrotecan (AstraZeneca topoisomerase-I ADC,
+    Phase 2). Mersana XMT-1660 and FivePrime/Genentech FPA150 round out the
+    ADC tier. Tests the tracker on a target where the B7-family naming
+    overlaps with B7-H3 (CD276) — aliases must be specific (VTCN1, B7H4,
+    B7x, B7S1), and bare "B7" is NOT an alias.
+  exclude_terms:
+    - B7-H3
+    - CD276

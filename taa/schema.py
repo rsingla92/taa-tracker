@@ -81,6 +81,9 @@ class Trial(BaseModel):
     interventions: list[str] = Field(default_factory=list)
     conditions: list[str] = Field(default_factory=list)
     last_update: date
+    primary_completion_date: date | None = None  # planned or actual PCD — drives the catalysts view
+    primary_completion_is_actual: bool = False  # CT.gov distinguishes ESTIMATED vs ACTUAL
+    location_countries: list[str] = Field(default_factory=list)  # ISO-ish country names from CT.gov sites — used to filter catalysts to N. America
     citation_ids: list[int] = Field(default_factory=list)
 
 
@@ -316,6 +319,61 @@ class TargetProductProfile(BaseModel):
     curator_notes: str | None = None
 
 
+# ---- Catalysts + timeline (v0.3) ----------------------------------------------
+
+
+CatalystKind = Literal[
+    "trial_completion",  # CT.gov primary completion date
+    "conference",        # ASCO / AACR / ESMO / SITC / ASH — relevant data drop window
+    "readout_guidance",  # company-guided "topline expected Q3" from news / filings
+]
+
+
+class Catalyst(BaseModel):
+    """A forward-looking event that will change the antigen landscape.
+
+    Sourced from CT.gov primary completion dates, curated conference calendar,
+    and (future) regex/LLM extraction of company guidance from news + filings.
+    Kept distinct from TimelineEvent because catalysts are anticipatory; the
+    timeline is retrospective.
+    """
+
+    kind: CatalystKind
+    date: date  # event date (or anticipated)
+    title: str
+    detail: str | None = None  # e.g., "Phase 3 · trastuzumab deruxtecan · NSCLC"
+    url: str | None = None  # link to trial / conference / press release
+    sponsor: str | None = None
+    is_anticipated: bool = False  # True for ESTIMATED PCDs or guidance windows
+
+
+TimelineEventKind = Literal[
+    "news",
+    "filing",
+    "approval",
+    "abstract",
+    "preprint",
+    "grant",
+    "trial_update",
+]
+
+
+class TimelineEvent(BaseModel):
+    """A retrospective event — the historical record of the antigen.
+
+    Built by aggregating news, filings, approvals, abstracts, preprints, grants,
+    and trial updates from the current snapshot. Snapshot DB dedupes across
+    refreshes so events don't drop off when RSS feeds roll over.
+    """
+
+    kind: TimelineEventKind
+    date: date
+    title: str
+    source: str | None = None  # e.g., "FierceBiotech", "FDA", "EDGAR · 8-K"
+    url: str | None = None
+    detail: str | None = None  # optional subtitle (sponsor, phase, etc.)
+
+
 # ---- Top-level antigen page data ----------------------------------------------
 
 
@@ -369,3 +427,56 @@ class SynthOutput(BaseModel):
     """
 
     paragraphs: list[SynthParagraph]
+
+
+# ---- v0.3.1 LLM narrative outputs (catalyst pick + modality + index intro) ----
+
+
+class CatalystPick(BaseModel):
+    """One of the top-N picks the LLM made from the antigen's catalyst list.
+
+    `index` is the 0-based offset into the catalysts list passed to the LLM.
+    `reason` is a single sentence — why this readout matters for BD readers.
+    """
+
+    index: int = Field(ge=0)
+    reason: str
+
+
+class CatalystPicks(BaseModel):
+    picks: list[CatalystPick]
+
+
+class CatalystAnnotation(BaseModel):
+    """A one-line "what to watch for" for a specific catalyst.
+
+    `index` aligns with the catalysts list; `note` is the short forward look.
+    """
+
+    index: int = Field(ge=0)
+    note: str
+
+
+class CatalystAnnotations(BaseModel):
+    annotations: list[CatalystAnnotation]
+
+
+class ModalityNarrative(BaseModel):
+    """One short paragraph contextualising a modality's program table.
+
+    Rendered immediately above the modality's table. The renderer drops
+    narratives whose modality has no programs after normalization.
+    """
+
+    modality: Modality
+    text: str
+
+
+class ModalityNarratives(BaseModel):
+    narratives: list[ModalityNarrative]
+
+
+class IndexCommentary(BaseModel):
+    """Cross-antigen editorial paragraph shown above the index page table."""
+
+    text: str

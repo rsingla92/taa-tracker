@@ -3,7 +3,7 @@
 Open-source modality cross-cut scorecards for tumour-associated antigens.
 For biotech business development, corp dev, and strategy readers.
 
-**Status:** v0.2 — 6 antigens · 11 sources · citation-grounded LLM synthesis · curated TPP benchmark layer.
+**Status:** v0.3 — 7 antigens · 11 sources · citation-grounded LLM synthesis · curated TPP benchmark layer · snapshot DB · upcoming-catalysts view · historic timeline.
 
 ## Quick start
 
@@ -32,6 +32,7 @@ open dist/index.html
 | `b7-h3` | B7-H3 / CD276 | Pan-cancer ADC race (DS-7300, MGC018, HS-20093) + paediatric CAR-T. |
 | `5t4` | 5T4 / TPBG | Thin clinical pipeline, academic-heavy preclinical — preprints + grants matter. |
 | `ror1` | ROR1 | Zilovertamab vedotin (Merck) anchors. CAR-T tier growing (Lyell, Oncternal). |
+| `b7-h4` | B7-H4 / VTCN1 | Breast/ovarian/endometrial ADC race (AZD8205, XMT-1660, FPA150). Naming overlaps B7-H3 — alias matching is the gotcha. |
 
 Add an antigen by appending to `data/antigens.yaml` and re-running `taa-refresh`.
 
@@ -63,18 +64,23 @@ asyncio semaphore matching its published limit; failures degrade gracefully
 - `taa/synth.py` — citation-grounded LLM narrative (Anthropic structured output)
 - `taa/render.py` — Jinja2 → static HTML
 - `taa/audit_matches.py` — surfaces unknown drug names from CT.gov for one-key curation
+- `taa/catalysts.py` — forward-looking event extraction (CT.gov PCDs + conference calendar + news guidance regex)
+- `taa/snapshots.py` — SQLite snapshot DB; dedupes timeline events across refreshes so feed rollover doesn't lose history
 - `templates/` + `static/system.css` — design system (see `DESIGN.md`)
 - `data/antigens.yaml` — curated TAA universe
 - `data/drug_modality.yaml` — drug name → modality lookup
+- `data/conferences.yaml` — curated oncology meeting calendar (ASCO/AACR/ESMO/SITC/ASH/SABCS + symposia)
 - `data/tpp/*.yaml` — curated Target Product Profiles (current standard-of-care benchmark per antigen)
+- `data/snapshots.db` — SQLite snapshot history (committed; travels with the repo)
 
 ## Roadmap
 
-- **v0.2** *(current)*: 6 antigens · 11 sources · citation-grounded synthesis · TPP layer · cross-cut grid · sortable / printable scorecards
-- **v0.3**: snapshot DB + "What changed this week" deltas (highest-value next move — currently each refresh overwrites, so we have no time signal)
-- **v0.4**: cross-antigen whitespace heatmap (rows=antigens × cols=modalities, highlight cells where Open Targets tractability is high but the clinical column is empty)
-- **v0.5**: scale to 25–50 antigens with client-side search + modality / indication filters on the index page
-- **v0.6+**: investor-deck PDF extraction (LLM), test coverage, weekly digest email
+- **v0.2**: 6 antigens · 11 sources · citation-grounded synthesis · TPP layer · cross-cut grid · sortable / printable scorecards
+- **v0.3** *(current)*: snapshot DB (SQLite, dedupes events across runs) · upcoming catalysts (CT.gov primary completion dates for Phase 2+ active trials, curated conference calendar, regex-detected readout-guidance windows from news) · historic timeline (unified per-antigen retrospective view, survives RSS rollover) · B7-H4 added (7 antigens total)
+- **v0.4**: snapshot diffs — "What changed since last refresh" per antigen (phase advances, new programs, withdrawn trials, terminated programs) — the snapshot DB is in place, just needs a diff query + render
+- **v0.5**: cross-antigen whitespace heatmap (rows=antigens × cols=modalities, highlight cells where Open Targets tractability is high but the clinical column is empty)
+- **v0.6**: scale to 25–50 antigens with client-side search + modality / indication filters on the index page
+- **v0.7+**: LLM-based readout-date extraction (replace v0.3 regex), investor-deck PDF extraction, test coverage, weekly digest email
 
 See `DESIGN.md` for the design system.
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,7 +27,7 @@
     </svg>
     <span class="wordmark-text"><span class="wordmark-taa">TAA</span> Tracker</span>
   </a>
-  <span class="as-of">as of {{ generated_at.strftime('%Y-%m-%d') if generated_at else '' }}</span>
+  {% if generated_at %}<span class="as-of">as of {{ generated_at.strftime('%Y-%m-%d') }}</span>{% endif %}
   <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">light / dark</button>
 </header>
 
@@ -37,11 +37,11 @@
 
 <footer class="app-footer">
   <span>TAA Tracker — open source competitive intelligence for tumour-associated antigens</span>
-  <span class="mono">v{{ version | default('0.1.0') }}</span>
+  <span class="mono">v{{ version | default('0.3.0') }}</span>
 </footer>
 
 <script>
-  // Theme toggle — persisted to localStorage
+  // Theme toggle — persisted to localStorage. Dark is default (set in <html data-theme>).
   (function () {
     const KEY = 'taa-theme';
     const saved = localStorage.getItem(KEY);
@@ -87,6 +87,48 @@
       });
       rows.forEach(r => tbody.appendChild(r));
     }
+
+    // Timeline filter chips + density toggle
+    document.querySelectorAll('[data-tl-controls]').forEach(controls => {
+      const list = controls.parentElement?.querySelector('[data-tl-list]');
+      if (!list) return;
+      const chips = controls.querySelectorAll('.tl-chip');
+      const allChip = controls.querySelector('[data-tl-kind="all"]');
+      const kindChips = Array.from(controls.querySelectorAll('.tl-chip:not([data-tl-kind="all"])'));
+
+      function applyFilter() {
+        // Build data-tl-active value: "|kind1|kind2|" — selector matches each.
+        const active = kindChips.filter(c => c.classList.contains('is-active')).map(c => c.dataset.tlKind);
+        if (active.length === 0 || active.length === kindChips.length) {
+          // None or all selected: clear filter (show everything).
+          list.removeAttribute('data-tl-active');
+          allChip?.classList.add('is-active');
+        } else {
+          list.dataset.tlActive = '|' + active.join('|') + '|';
+          allChip?.classList.remove('is-active');
+        }
+      }
+      applyFilter();
+
+      controls.addEventListener('click', e => {
+        const chip = e.target.closest('.tl-chip');
+        if (!chip) return;
+        if (chip.dataset.tlKind === 'all') {
+          kindChips.forEach(c => c.classList.add('is-active'));
+        } else {
+          chip.classList.toggle('is-active');
+        }
+        applyFilter();
+      });
+
+      // Density toggle
+      const dens = controls.querySelector('[data-tl-density]');
+      dens?.addEventListener('click', () => {
+        const condensed = list.classList.toggle('is-condensed');
+        dens.setAttribute('aria-pressed', condensed ? 'false' : 'true');
+        dens.textContent = condensed ? 'Expanded view' : 'Condensed view';
+      });
+    });
 
     document.querySelectorAll('table[data-sortable]').forEach(table => {
       const headers = table.querySelectorAll('thead th');

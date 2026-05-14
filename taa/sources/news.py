@@ -1,8 +1,8 @@
 """Biotech news aggregator — RSS feed client.
 
-Pulls from FierceBiotech, PRNewswire pharma category, GlobeNewswire pharma
-category, and Endpoints News headlines. Filters per-antigen by alias keyword
-match in title or summary.
+Pulls from FierceBiotech, Fierce Pharma, BioPharma Dive, STAT Pharma,
+Endpoints News, and FDA Press releases. Filters per-antigen by alias
+keyword match in title or summary.
 
 Why RSS: simple, no auth, no rate limit hell, captures real-time material
 events (deal announcements, IND filings, financings, trial readouts) that
@@ -15,23 +15,29 @@ items. No NLP, no entity resolution. The synthesis layer can use these as
 
 import asyncio
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
+from xml.etree import ElementTree as ET
 
 import httpx
-from xml.etree import ElementTree as ET
 
 from taa.schema import Antigen, Citation, NewsItem, SourceFreshness
 
 # Each source is (name, RSS URL). All are free, no auth.
+#
+# Drift watch: feed URLs change over time. Verified live 2026-05-13. Previous
+# entries (PRNewswire pharma + biotech, BioSpace) 404'd and were replaced.
+# GlobeNewswire pharma was dropped — the category feeds consumer-marketing
+# noise (SHEIN, gift sets, fashion) rather than real pharma news.
+# Add new feeds only after confirming items > 0 and TAA-relevance via a probe.
 FEEDS: list[tuple[str, str]] = [
     ("FierceBiotech", "https://www.fiercebiotech.com/rss/xml"),
-    ("PRNewswire pharma", "https://www.prnewswire.com/rss/health/pharmaceuticals-news.rss"),
-    ("PRNewswire biotech", "https://www.prnewswire.com/rss/health/biotechnology-news.rss"),
-    ("GlobeNewswire pharma", "https://www.globenewswire.com/RssFeed/subjectcode/15-Pharmaceuticals/feedTitle/GlobeNewswire-Pharmaceuticals"),
+    ("Fierce Pharma", "https://www.fiercepharma.com/rss/xml"),
+    ("BioPharma Dive", "https://www.biopharmadive.com/feeds/news/"),
+    ("STAT Pharma", "https://www.statnews.com/category/pharma/feed/"),
     ("Endpoints News", "https://endpts.com/feed/"),
-    ("BioSpace", "https://www.biospace.com/rss/news/biotech.aspx"),
+    ("FDA Press", "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml"),
 ]
 
 TIMEOUT_S = 20
@@ -55,7 +61,7 @@ class NewsResult:
 
 async def fetch(antigen: Antigen, citation_id_start: int = 1) -> NewsResult:
     """Pull all RSS feeds in parallel, filter to items mentioning antigen aliases."""
-    attempt_at = datetime.now(timezone.utc)
+    attempt_at = datetime.now(UTC)
     aliases = [antigen.primary_name, *antigen.aliases]
     pattern = re.compile(
         r"\b(" + "|".join(re.escape(a) for a in aliases) + r")\b", re.IGNORECASE
@@ -77,7 +83,7 @@ async def fetch(antigen: Antigen, citation_id_start: int = 1) -> NewsResult:
         if isinstance(result, BaseException):
             feed_errors.append(f"{feed_name}: {type(result).__name__}")
             continue
-        for raw in result:  # type: ignore[union-attr]
+        for raw in result:
             haystack = raw.get("title", "") + " " + raw.get("summary", "")
             if pattern.search(haystack):
                 all_items.append((feed_name, raw))
@@ -130,6 +136,19 @@ async def _fetch_feed(
     return []
 
 
+def _all_text(element: ET.Element | None) -> str:
+    """Concatenate all text within an element, including nested children.
+
+    FierceBiotech wraps each <title> in an <a href>...</a> tag, so
+    ``findtext("title")`` returns the empty string before the anchor instead
+    of the actual title. ``itertext()`` walks descendants and collects every
+    text node, which is what we want for RSS titles + descriptions.
+    """
+    if element is None:
+        return ""
+    return "".join(element.itertext()).strip()
+
+
 def _parse_rss(xml_text: str) -> list[dict[str, Any]]:
     """Parse RSS/Atom-flavored XML into a flat list of items.
 
@@ -144,10 +163,10 @@ def _parse_rss(xml_text: str) -> list[dict[str, Any]]:
 
     # RSS 2.0: <rss><channel><item>...</item></channel></rss>
     for item in root.findall(".//item")[:MAX_PER_FEED]:
-        title = (item.findtext("title") or "").strip()
-        link = (item.findtext("link") or "").strip()
-        summary = (item.findtext("description") or "").strip()
-        pub = (item.findtext("pubDate") or "").strip()
+        title = _all_text(item.find("title"))
+        link = _all_text(item.find("link"))
+        summary = _all_text(item.find("description"))
+        pub = _all_text(item.find("pubDate"))
         items.append(
             {
                 "title": _strip_html(title),
@@ -162,11 +181,13 @@ def _parse_rss(xml_text: str) -> list[dict[str, Any]]:
     if not items:
         ns = "{http://www.w3.org/2005/Atom}"
         for entry in root.findall(f".//{ns}entry")[:MAX_PER_FEED]:
-            title = (entry.findtext(f"{ns}title") or "").strip()
+            title = _all_text(entry.find(f"{ns}title"))
             link_el = entry.find(f"{ns}link")
             link = link_el.get("href", "") if link_el is not None else ""
-            summary = (entry.findtext(f"{ns}summary") or "").strip()
-            pub = (entry.findtext(f"{ns}published") or entry.findtext(f"{ns}updated") or "").strip()
+            summary = _all_text(entry.find(f"{ns}summary"))
+            pub = _all_text(entry.find(f"{ns}published")) or _all_text(
+                entry.find(f"{ns}updated")
+            )
             items.append(
                 {
                     "title": _strip_html(title),
@@ -186,7 +207,7 @@ def _parse_date(rfc822: str) -> datetime | None:
     try:
         dt = parsedate_to_datetime(rfc822)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return dt
     except (TypeError, ValueError):
         return None

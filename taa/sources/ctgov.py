@@ -8,7 +8,7 @@ then filter results in normalize.py against per-antigen exclude_terms.
 """
 
 import asyncio
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from typing import Any
 
 import httpx
@@ -76,7 +76,7 @@ async def fetch(antigen: Antigen, citation_id_start: int = 1) -> CtgovResult:
     "NEU" matching neurology / neuroendocrine / neutropenia studies). Aliases
     that need broader matching can be added with explicit field hints in v0.2.
     """
-    attempt_at = datetime.now(timezone.utc)
+    attempt_at = datetime.now(UTC)
     aliases = [antigen.primary_name, *antigen.aliases]
     # AREA filter: search only Intervention name + BriefTitle + OfficialTitle.
     # CT.gov v2 query syntax: AREA[FieldName]"value"
@@ -119,7 +119,7 @@ async def _fetch_with_retry(query: str) -> list[dict[str, Any]]:
         for _ in range(50):  # max 50 pages = 5000 studies hard cap
             params: dict[str, Any] = {
                 "query.term": query,
-                "fields": "NCTId,BriefTitle,Phase,OverallStatus,LeadSponsorName,InterventionName,Condition,LastUpdatePostDate",
+                "fields": "NCTId,BriefTitle,Phase,OverallStatus,LeadSponsorName,InterventionName,Condition,LastUpdatePostDate,PrimaryCompletionDate,LocationCountry",
                 "pageSize": 100,
             }
             if page_token:
@@ -173,6 +173,7 @@ def _normalize(
         design = protocol.get("designModule", {})
         arms = protocol.get("armsInterventionsModule", {})
         conds = protocol.get("conditionsModule", {})
+        contacts = protocol.get("contactsLocationsModule", {})
 
         nct_id = ident.get("nctId")
         if not nct_id:
@@ -190,11 +191,36 @@ def _normalize(
             date.fromisoformat(last_update_str) if last_update_str else date(1970, 1, 1)
         )
 
+        # primaryCompletionDateStruct: {date: "YYYY-MM-DD" | "YYYY-MM", type: "ACTUAL" | "ESTIMATED"}
+        # Month-only dates (no day) appear for far-future ESTIMATED dates; default to day 15.
+        pcd_struct = status.get("primaryCompletionDateStruct", {})
+        pcd_raw = pcd_struct.get("date")
+        pcd: date | None = None
+        if pcd_raw:
+            try:
+                if len(pcd_raw) == 7:  # "YYYY-MM"
+                    pcd = date.fromisoformat(pcd_raw + "-15")
+                else:
+                    pcd = date.fromisoformat(pcd_raw)
+            except ValueError:
+                pcd = None
+        pcd_is_actual = pcd_struct.get("type") == "ACTUAL"
+
         interventions = [
             i.get("name", "")
             for i in arms.get("interventions", [])
             if i.get("name")
         ]
+
+        # Unique set of country names where the trial has at least one site.
+        # Drives the North-America catalyst filter; CT.gov sometimes omits
+        # locations entirely (early/protocol-only studies) — empty list means
+        # "geography unknown", catalysts logic treats that as a non-match.
+        countries = sorted({
+            loc.get("country", "")
+            for loc in contacts.get("locations", [])
+            if loc.get("country")
+        })
 
         trials.append(
             Trial(
@@ -206,6 +232,9 @@ def _normalize(
                 interventions=interventions,
                 conditions=conds.get("conditions", []),
                 last_update=last_update,
+                primary_completion_date=pcd,
+                primary_completion_is_actual=pcd_is_actual,
+                location_countries=countries,
                 citation_ids=[cite_id],
             )
         )
@@ -213,7 +242,7 @@ def _normalize(
         citations.append(
             Citation(
                 id=cite_id,
-                url=f"https://clinicaltrials.gov/study/{nct_id}",  # type: ignore[arg-type]
+                url=f"https://clinicaltrials.gov/study/{nct_id}",
                 title=f"{nct_id} · ClinicalTrials.gov",
                 source_type="trial",
                 retrieved_at=retrieved_at,

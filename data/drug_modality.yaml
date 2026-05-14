@@ -1,13 +1,91 @@
 # Drug name → modality lookup.
 #
-# Substring match, case-insensitive. Most-specific first (since first hit wins).
+# Substring match, case-insensitive. **Longest match wins** (see
+# taa/normalize.py:match_canonical_drug), so generic catch-alls like "CAR-T"
+# can coexist with specific drugs like "ciltacabtagene" — the specific drug
+# always beats the fallback.
+#
 # Drug names appear in CT.gov interventions in many forms: "T-DXd (DS-8201)",
-# "Trastuzumab deruxtecan", "DS-8201a", etc. Catching ANY of those forms is enough.
+# "Trastuzumab deruxtecan", "DS-8201a", etc. Listing any form is enough to match.
 #
 # Unknown drugs default to "other" modality and get surfaced by bin/audit-matches.
 #
+# Multiple aliases for the same drug (e.g., T-DXd / DS-8201 / Enhertu / trastuzumab
+# deruxtecan) should ALL appear in the modality section AND get mapped to one
+# canonical name in the `canonical_aliases` block at the bottom of this file.
+# Without an alias entry, each name becomes its own Program row.
+
+# ---- Canonical aliases (collapse synonyms into one Program) -------------------
+# Maps every alias → primary display name. Used by trials_to_programs to roll
+# up trial-sponsor variants. Keys MUST also appear in one of the modality
+# sections below (or the substring match won't fire in the first place).
+canonical_aliases:
+  # HER2 — Enhertu (Daiichi-Sankyo / AstraZeneca ADC)
+  "T-DXd": "Trastuzumab deruxtecan"
+  "DS-8201": "Trastuzumab deruxtecan"
+  "Enhertu": "Trastuzumab deruxtecan"
+  "trastuzumab deruxtecan": "Trastuzumab deruxtecan"
+  # HER2 — Kadcyla (Genentech ADC)
+  "T-DM1": "Trastuzumab emtansine"
+  "ado-trastuzumab": "Trastuzumab emtansine"
+  "Kadcyla": "Trastuzumab emtansine"
+  # HER2 — Herceptin (Roche mAb)
+  "trastuzumab": "Trastuzumab"
+  "Herceptin": "Trastuzumab"
+  # HER2 — Perjeta (Roche mAb)
+  "pertuzumab": "Pertuzumab"
+  "Perjeta": "Pertuzumab"
+  # HER2 — Margenza (MacroGenics mAb)
+  "margetuximab": "Margetuximab"
+  "Margenza": "Margetuximab"
+  # HER2 — RC48 / Aidixi (RemeGen ADC)
+  "disitamab vedotin": "Disitamab vedotin"
+  "RC48": "Disitamab vedotin"
+  # HER2 — Trastuzumab duocarmazine (Byondis ADC)
+  "trastuzumab duocarmazine": "Trastuzumab duocarmazine"
+  "SYD985": "Trastuzumab duocarmazine"
+  "vic-trastuzumab": "Trastuzumab duocarmazine"
+  # HER2 — Zanidatamab (Jazz/Zymeworks bispecific)
+  "zanidatamab": "Zanidatamab"
+  "ZW25": "Zanidatamab"
+  # HER2 — Tucatinib (Seagen kinase — historically mapped as mAb in this map; left alone)
+  # CLDN18.2 — Vyloy / zolbetuximab (Astellas mAb)
+  "zolbetuximab": "Zolbetuximab"
+  "Vyloy": "Zolbetuximab"
+  "IMAB362": "Zolbetuximab"
+  # BCMA — Carvykti (Janssen CAR-T)
+  "ciltacabtagene": "Ciltacabtagene autoleucel"
+  "Carvykti": "Ciltacabtagene autoleucel"
+  # BCMA — Abecma (BMS/2seventy CAR-T)
+  "idecabtagene": "Idecabtagene vicleucel"
+  "Abecma": "Idecabtagene vicleucel"
+  # BCMA — Tecvayli (Janssen bispecific)
+  "teclistamab": "Teclistamab"
+  "Tecvayli": "Teclistamab"
+  # BCMA — Elrexfio (Pfizer bispecific)
+  "elranatamab": "Elranatamab"
+  "Elrexfio": "Elranatamab"
+  # BCMA — Belantamab mafodotin (GSK ADC; withdrawn 2022, returning 2024+)
+  "belantamab mafodotin": "Belantamab mafodotin"
+  "GSK2857916": "Belantamab mafodotin"
+  # ROR1 — Zilovertamab vedotin (Merck/VelosBio ADC). The naked mAb
+  # "Zilovertamab" stays its own row because it's a distinct clinical program.
+  "zilovertamab vedotin": "Zilovertamab vedotin"
+  "MK-2140": "Zilovertamab vedotin"
+  "VLS-101": "Zilovertamab vedotin"
+  # ROR1 — Cirmtuzumab (Oncternal/UCSD mAb)
+  "cirmtuzumab": "Cirmtuzumab"
+  "UC-961": "Cirmtuzumab"
+  # B7-H4 — Puxitatug samrotecan (AstraZeneca ADC)
+  "puxitatug samrotecan": "Puxitatug samrotecan"
+  "AZD8205": "Puxitatug samrotecan"
+  # B7-H3 — Ifinatamab deruxtecan / DS-7300 (Daiichi-Sankyo ADC; the YAML has
+  # "ifinatamab deruxtecan" elsewhere; no alias collision presently)
+
+# ---- Order rule (legacy) ------------------------------------------------------
 # Order: ADC before mAb so "trastuzumab deruxtecan" matches as ADC, not mAb.
-# Bispecific before mAb for the same reason.
+# Bispecific before mAb for the same reason. Now redundant under longest-match,
+# but kept for human readability.
 
 adc:
   # HER2-targeting ADCs
@@ -58,6 +136,34 @@ adc:
   - "LCB71"
   - "CS5001"
   - "ABBV-1011"
+  # B7-H4 ADCs
+  - "puxitatug samrotecan"
+  - "AZD8205"
+  - "XMT-1660"
+  - "BG-C9074"
+  # B7-H3 ADCs (additions surfaced from Phase 2+ unmapped audit)
+  - "GSK5764227"
+  - "MHB088C"
+  - "Risvutatug rezetecan"
+  - "Ris-Rez"
+  # CLDN18.2 ADCs
+  - "JS107"
+  - "Sonesitatug vedotin"
+  - "EO-3021"
+  - "LM-102"
+  - "SHR-A1904"
+  # HER2 ADCs
+  - "SHR-A1811"
+  - "BAT8001"
+  - "BDC-1001"
+  - "BNT323"  # also known as DB-1303; not adding the alias to avoid split rollup
+  - "A166"
+  - "BL-M07D1"
+  - "ALT-P7"
+  - "TQB2102"
+  # 5T4 ADCs
+  - "SYD1875"
+  - "TUB-030"
 
 bispecific:
   # HER2-targeting bispecifics
@@ -85,6 +191,37 @@ bispecific:
   - "APV-527"
   # ROR1-targeting bispecifics
   - "NVG-111"
+  # B7-H4-targeting bispecifics
+  - "ABL103"
+  - "GEN1047"
+  - "PF-07260437"
+  - "LNCB74"
+  # BCMA bispecifics (additions surfaced from Phase 2+ unmapped audit)
+  - "CM336"
+  - "alnuctamab"
+  - "TNB-383B"
+  - "REGN5459"
+  - "anti-BCMA/CD3 bispecific"
+  - "BCMA/CD3 bispecific"
+  # CLDN18.2 bispecifics
+  - "AK132"
+  - "AMG 910"
+  - "AMG910"
+  - "IBI345"
+  - "Givastomig"
+  - "Rilvegostomig"
+  # HER2 bispecifics (CD3-engagers)
+  - "BNT142"
+  # ROR1 bispecifics
+  - "NM32-2668"
+  # 5T4 bispecifics
+  - "GEN1044"
+  - "CBA-1535"
+  # B7-H3 bispecifics
+  - "MGD009"
+  - "orlotamab"
+  - "obrindatamab"
+  - "HLX316"
 
 car-t:
   # Generic markers
@@ -119,6 +256,31 @@ car-t:
   - "LYL845"
   - "4SCAR-ROR1"
   - "ROR1 CAR"
+  # BCMA CAR-Ts (additions surfaced from Phase 2+ unmapped audit).
+  # NOTE: Cilta-cel, JNJ-68284528, and bb2121 are intentionally NOT mapped —
+  # they're aliases for ciltacabtagene (Carvykti) and idecabtagene (Abecma)
+  # which already exist above. Mapping them separately would split each drug
+  # into multiple Programs. Adding alias→canonical aliasing is a v0.4 item.
+  - "bb21217"  # distinct bluebird BCMA CAR-T (not Abecma)
+  - "ALLO-605"
+  - "ALLO-715"
+  - "CT103A"
+  - "CTX120"
+  - "C-CAR088"
+  - "C-CAR168"
+  - "PHE885"
+  - "MCARH109"
+  - "MCARH125"
+  - "Descartes-08"
+  - "AZD0120"
+  - "P-BCMA"
+  # CLDN18.2 CAR-Ts
+  - "CT048"
+  - "LB1908"
+  - "TAC01"
+  # B7-H3 CAR-Ts (specific programs)
+  - "SJCARB7H3"
+  - "QH104"
 
 mab:
   # HER2-targeting mAbs (after ADCs/bispecifics so trastuzumab deruxtecan etc don't match here)
@@ -140,6 +302,15 @@ mab:
   # ROR1 mAbs
   - "cirmtuzumab"
   - "UC-961"
+  # B7-H4 mAbs
+  - "FPA150"
+  # ROR1 mAbs (zilovertamab is the naked mAb; zilovertamab vedotin is the ADC,
+  # already mapped above as MK-2140/VLS-101 — substring order ensures ADC wins
+  # for the vedotin form because the ADC section comes first)
+  - "Zilovertamab"
+  # HER2 mAbs (biosimilars + late additions)
+  - "ABP 980"
+  - "ABP-980"
 
 vaccine:
   - "vaccine"

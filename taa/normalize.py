@@ -46,27 +46,48 @@ def filter_excluded(trials: list[Trial], antigen: Antigen) -> list[Trial]:
 
 
 def match_canonical_drug(
-    drug_name: str, modality_map: dict[str, Modality]
+    drug_name: str,
+    modality_map: dict[str, Modality],
+    canonical_aliases: dict[str, str] | None = None,
 ) -> tuple[str, Modality] | None:
-    """Look up a drug name and return (canonical_key, modality) if it matches.
+    """Look up a drug name and return (canonical_name, modality) if it matches.
 
-    Returns None if unknown. The canonical_key is the YAML map key (e.g.,
-    "Trastuzumab", "T-DXd"), used to roll up trial-sponsor variants into one
-    Program. Match is case-insensitive substring; first hit wins, so order
-    drug_modality.yaml most-specific first ("trastuzumab deruxtecan" before
-    "trastuzumab" so the ADC is picked before the bare mAb).
+    Returns None if unknown. Algorithm:
+
+    1. **Longest substring match wins.** Older logic was first-hit-wins, which
+       caused generic catch-alls like ``"CAR-T"`` (5 chars) to swallow specific
+       drugs like ``"ciltacabtagene"`` (14 chars) when both appeared in an
+       intervention name. Length-preference makes the curated specifics beat
+       the fallback regardless of YAML order.
+
+    2. **Canonical aliasing.** The YAML key that matched is then mapped through
+       ``canonical_aliases`` to a primary drug name, so trial-sponsor variants
+       like ``"T-DXd"`` / ``"DS-8201"`` / ``"Enhertu"`` all roll up under one
+       canonical name (e.g. ``"Trastuzumab deruxtecan"``). If a key isn't in
+       the alias map, the key itself is treated as canonical.
     """
     drug_lc = drug_name.lower()
+    aliases = canonical_aliases or {}
+    best_key: str | None = None
+    best_len = 0
+    best_modality: Modality | None = None
     for known, modality in modality_map.items():
-        if known.lower() in drug_lc:
-            return known, modality
-    return None
+        known_lc = known.lower()
+        if known_lc in drug_lc and len(known_lc) > best_len:
+            best_key = known
+            best_len = len(known_lc)
+            best_modality = modality
+    if best_key is None or best_modality is None:
+        return None
+    canonical = aliases.get(best_key, best_key)
+    return canonical, best_modality
 
 
 def trials_to_programs(
     trials: list[Trial],
     antigen: Antigen,
     modality_map: dict[str, Modality],
+    canonical_aliases: dict[str, str] | None = None,
 ) -> tuple[list[Program], list[str]]:
     """Roll up trials → one Program per (canonical_drug, modality).
 
@@ -91,7 +112,7 @@ def trials_to_programs(
     for trial in trials:
         sponsor = trial.sponsors[0] if trial.sponsors and trial.sponsors[0] else "Unknown"
         for intervention in trial.interventions or []:
-            match = match_canonical_drug(intervention, modality_map)
+            match = match_canonical_drug(intervention, modality_map, canonical_aliases)
             if match is None:
                 unknown_interventions.add(intervention)
                 continue
@@ -121,7 +142,7 @@ def trials_to_programs(
                 sponsors=sponsors,
                 trial_count=len(grp),
                 most_advanced_phase=phase,
-                status=status,  # type: ignore[arg-type]
+                status=status,
                 latest_update=latest,
                 citation_ids=cite_ids,
             )
@@ -146,6 +167,17 @@ def _max_phase(phases: list[Phase]) -> Phase:
     return max(phases, key=lambda p: _PHASE_RANK.get(p, -1))
 
 
+_MODALITY_SECTIONS = {
+    "adc",
+    "car-t",
+    "bispecific",
+    "mab",
+    "radioligand",
+    "vaccine",
+    "other",
+}
+
+
 def load_modality_map(yaml_data: dict[str, Any]) -> dict[str, Modality]:
     """Convert drug_modality.yaml → flat dict[drug_name → modality].
 
@@ -158,16 +190,28 @@ def load_modality_map(yaml_data: dict[str, Any]) -> dict[str, Modality]:
     """
     flat: dict[str, Modality] = {}
     for modality, drugs in yaml_data.items():
-        if modality not in (
-            "adc",
-            "car-t",
-            "bispecific",
-            "mab",
-            "radioligand",
-            "vaccine",
-            "other",
-        ):
+        if modality not in _MODALITY_SECTIONS:
             continue
         for drug in drugs or []:
             flat[drug] = modality  # type: ignore[assignment]
     return flat
+
+
+def load_canonical_aliases(yaml_data: dict[str, Any]) -> dict[str, str]:
+    """Extract the optional ``canonical_aliases`` map from drug_modality.yaml.
+
+    Structure:
+      canonical_aliases:
+        "T-DXd": "Trastuzumab deruxtecan"
+        "DS-8201": "Trastuzumab deruxtecan"
+        "Enhertu": "Trastuzumab deruxtecan"
+
+    Maps an alias (any YAML key from the modality sections) to its canonical
+    display name. Trial rollups use the canonical name, so all aliases for one
+    drug collapse into a single Program. Aliases not listed here are treated
+    as their own canonical name.
+    """
+    raw = yaml_data.get("canonical_aliases") or {}
+    if not isinstance(raw, dict):
+        return {}
+    return {str(k): str(v) for k, v in raw.items()}

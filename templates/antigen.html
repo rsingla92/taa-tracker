@@ -58,12 +58,14 @@
     <span class="toc-label">Sections</span>
     {% if synth and synth.paragraphs %}<a href="#synthesis" class="toc-link">Story</a>{% endif %}
     {% if tpp %}<a href="#tpp" class="toc-link">TPP benchmark</a>{% endif %}
+    {% if catalysts %}<a href="#catalysts" class="toc-link">Upcoming <span class="toc-count">{{ catalysts | length }}</span></a>{% endif %}
     {% if open_targets %}<a href="#biology" class="toc-link">Biology</a>{% endif %}
     {% if fda_approvals or ema_approvals %}<a href="#approvals" class="toc-link">Approvals <span class="toc-count">{{ fda_approvals|length + ema_approvals|length }}</span></a>{% endif %}
     {% if abstracts %}<a href="#abstracts" class="toc-link">Abstracts <span class="toc-count">{{ abstract_count }}</span></a>{% endif %}
     {% if preprints %}<a href="#preprints" class="toc-link">Preprints <span class="toc-count">{{ preprint_count }}</span></a>{% endif %}
     {% if grants %}<a href="#grants" class="toc-link">NIH grants <span class="toc-count">{{ grant_count }}</span></a>{% endif %}
     {% if news %}<a href="#news" class="toc-link">News <span class="toc-count">{{ news | length }}</span></a>{% endif %}
+    {% if timeline %}<a href="#timeline" class="toc-link">Timeline <span class="toc-count">{{ timeline | length }}</span></a>{% endif %}
     <a href="#citations" class="toc-link">Citations <span class="toc-count">{{ citations | length }}</span></a>
   </div>
   <div class="toc-row toc-row-modalities">
@@ -219,6 +221,74 @@
 </section>
 {% endif %}
 
+{# ---- Upcoming catalysts (v0.3) — forward-looking, BD's most-wanted view ---- #}
+{% if catalysts %}
+<section class="catalysts" id="catalysts">
+  <h2>Upcoming catalysts · {{ catalysts | length }} event{% if catalysts | length != 1 %}s{% endif %} in next 18 months</h2>
+  <p class="meta-text catalysts-subtitle">
+    Forward-looking events that will move the {{ antigen.primary_name }} landscape. Trial-completion catalysts are
+    filtered to <strong>biotech/pharma-sponsored Phase 2+ programs with a North American site</strong> — academic-IIT
+    completions are dropped (low BD signal, high volume). Sources: CT.gov primary completion dates, curated oncology
+    conference calendar, regex-detected readout guidance from press releases. Dates prefixed with
+    <span class="mono">~</span> are estimated (planned PCD or company-guided window).
+  </p>
+
+  {# ---- AI watch list — top picks from the catalyst list (v0.3.1) ---- #}
+  {% if picks_by_index %}
+  <aside class="catalyst-watchlist">
+    <div class="watchlist-eyebrow">Watch list · AI-curated</div>
+    <ol class="watchlist-picks">
+      {% for idx, reason in picks_by_index.items() %}
+        {% if idx < catalysts|length %}
+        {% set c = catalysts[idx] %}
+        <li>
+          <div class="watchlist-meta">
+            <span class="tnum mono watchlist-date">{% if c.is_anticipated %}~{% endif %}{{ c.date.isoformat() }}</span>
+            <span class="catalyst-kind-label watchlist-kind catalyst-kind-{{ c.kind }}"><span class="catalyst-dot"></span>{{ c.kind | replace('_', ' ') }}</span>
+            {% if c.sponsor %}<span class="meta-text watchlist-sponsor">{{ c.sponsor }}</span>{% endif %}
+          </div>
+          <div class="watchlist-title">
+            {% if c.url %}<a href="{{ c.url }}" rel="nofollow noopener">{{ c.title }}</a>{% else %}{{ c.title }}{% endif %}
+          </div>
+          <p class="watchlist-reason">{{ reason }}</p>
+        </li>
+        {% endif %}
+      {% endfor %}
+    </ol>
+    <p class="watchlist-foot meta-text">Picked from the full catalyst list below by an LLM (claude-haiku-4-5) ranking on phase, sponsor commitment, indication unmet need, and novelty.</p>
+  </aside>
+  {% endif %}
+
+  <table class="catalysts-table">
+    <thead>
+      <tr>
+        <th style="width: 116px;">Date</th>
+        <th style="width: 50px;">In</th>
+        <th style="width: 140px;">Type</th>
+        <th>Event</th>
+        <th style="width: 180px;">Sponsor / source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in catalysts %}
+      <tr class="catalyst-row catalyst-kind-{{ c.kind }}{% if c.is_anticipated %} catalyst-anticipated{% endif %}">
+        <td class="tnum catalyst-date">{% if c.is_anticipated %}<span class="catalyst-tilde">~</span>{% endif %}{{ c.date.isoformat() }}</td>
+        <td class="tnum meta-text catalyst-when">{{ (c.date - generated_at.date()).days }}d</td>
+        <td><span class="catalyst-kind-label"><span class="catalyst-dot"></span>{{ c.kind | replace('_', ' ') }}</span></td>
+        <td>
+          {% if c.url %}<a class="catalyst-title" href="{{ c.url }}" rel="nofollow noopener">{{ c.title }}</a>{% else %}<span class="catalyst-title">{{ c.title }}</span>{% endif %}
+          {% if c.detail %}<div class="meta-text catalyst-detail">{{ c.detail }}</div>{% endif %}
+          {% set ann = annotations_by_index.get(loop.index0) %}
+          {% if ann %}<div class="catalyst-annotation">{{ ann }}</div>{% endif %}
+        </td>
+        <td class="meta-text catalyst-sponsor">{{ c.sponsor or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
 {# ---- Open Targets biology ---- #}
 {% if open_targets %}
 <section class="biology" id="biology">
@@ -272,6 +342,12 @@
       <span class="modality-count">{{ group | length }} program{% if group | length != 1 %}s{% endif %}</span>
     </div>
 
+    {% set mod_narrative = modality_text_by_key.get(modality_key) %}
+    {% if mod_narrative %}
+    <p class="modality-narrative">{{ mod_narrative }}</p>
+    {% endif %}
+
+    <div class="programs-scroll{% if group | length > 5 %} programs-scroll-overflow{% endif %}">
     <table class="programs sortable" data-sortable>
       <thead>
         <tr>
@@ -304,6 +380,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </section>
   {% endif %}
 {% endfor %}
@@ -358,8 +435,8 @@
 
 {# ---- Conference abstracts (PubMed-indexed ASCO/AACR/ESMO/SITC/ASH) ---- #}
 {% if abstracts %}
-<section class="abstracts" id="abstracts">
-  <h2>Recent conference abstracts · {{ abstract_count }} from ASCO/AACR/ESMO/SITC/ASH</h2>
+<details class="abstracts section-collapsible" id="abstracts">
+  <summary><h2>Recent conference abstracts · {{ abstract_count }} from ASCO/AACR/ESMO/SITC/ASH</h2></summary>
   <ul class="news-list">
     {% for ab in abstracts %}
     <li>
@@ -374,13 +451,13 @@
     {% endfor %}
   </ul>
   {% if abstract_count > abstracts | length %}<p class="meta-text">+{{ abstract_count - abstracts | length }} more abstracts indexed</p>{% endif %}
-</section>
+</details>
 {% endif %}
 
 {# ---- Preprints (bioRxiv / medRxiv via Europe PMC) ---- #}
 {% if preprints %}
-<section class="abstracts" id="preprints">
-  <h2>Recent preprints · {{ preprint_count }} on bioRxiv / medRxiv</h2>
+<details class="abstracts section-collapsible" id="preprints">
+  <summary><h2>Recent preprints · {{ preprint_count }} on bioRxiv / medRxiv</h2></summary>
   <p class="meta-text" style="margin-bottom: 16px;">Preprints lead PubMed by 6–18 months for clinical readouts and even longer for academic pre-clinical work.</p>
   <ul class="news-list">
     {% for p in preprints %}
@@ -395,13 +472,13 @@
     {% endfor %}
   </ul>
   {% if preprint_count > preprints | length %}<p class="meta-text">+{{ preprint_count - preprints | length }} more preprints indexed</p>{% endif %}
-</section>
+</details>
 {% endif %}
 
 {# ---- NIH grants (RePORTER) ---- #}
 {% if grants %}
-<section class="abstracts" id="grants">
-  <h2>NIH-funded grants · {{ grant_count }} active in last 5 years</h2>
+<details class="abstracts section-collapsible" id="grants">
+  <summary><h2>NIH-funded grants · {{ grant_count }} active in last 5 years</h2></summary>
   <p class="meta-text" style="margin-bottom: 16px;">US-funded academic pipeline (NCI · NHLBI · NIAID · NIDDK). Leading indicator — IIT trials typically follow grants by 2–4 years.</p>
   <table class="approvals-table">
     <thead>
@@ -426,13 +503,13 @@
     </tbody>
   </table>
   {% if grant_count > grants | length %}<p class="meta-text">+{{ grant_count - grants | length }} more grants indexed</p>{% endif %}
-</section>
+</details>
 {% endif %}
 
 {# ---- Recent news (RSS aggregation) ---- #}
 {% if news %}
-<section class="news" id="news">
-  <h2>Recent news · {{ news_total }} item{% if news_total != 1 %}s{% endif %} from biotech press</h2>
+<details class="news section-collapsible" id="news" open>
+  <summary><h2>Recent news · {{ news_total }} item{% if news_total != 1 %}s{% endif %} from biotech press</h2></summary>
   <ul class="news-list">
     {% for item in news %}
     <li>
@@ -446,7 +523,58 @@
     {% endfor %}
   </ul>
   {% if news_total > news | length %}<p class="meta-text">+{{ news_total - news | length }} more news items</p>{% endif %}
-</section>
+</details>
+{% endif %}
+
+{# ---- Historic timeline (v0.3) — unified retrospective view ---- #}
+{% if timeline %}
+<details class="timeline-section section-collapsible" id="timeline">
+  <summary>
+    <h2>Historic timeline · {{ timeline | length }} event{% if timeline | length != 1 %}s{% endif %}</h2>
+  </summary>
+  <p class="meta-text timeline-subtitle">
+    Reverse-chronological record of news, filings, approvals, abstracts, preprints, and grants. Persisted across
+    refreshes — events that age off the RSS feed stay in the timeline so the historical record doesn't decay.
+  </p>
+
+  {% set kinds_present = timeline | map(attribute='kind') | unique | list %}
+  <div class="timeline-controls" data-tl-controls>
+    <div class="timeline-filter" role="group" aria-label="Filter timeline by event type">
+      <span class="timeline-filter-label">Show</span>
+      <button type="button" class="tl-chip is-active" data-tl-kind="all">All</button>
+      {% for kind in ['approval','filing','abstract','preprint','grant','news','trial_update'] %}
+        {% if kind in kinds_present %}
+        <button type="button" class="tl-chip tl-chip-{{ kind }} is-active" data-tl-kind="{{ kind }}">{{ kind | replace('_', ' ') }}</button>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <button type="button" class="timeline-density-toggle" data-tl-density aria-pressed="false">Expanded view</button>
+  </div>
+
+  <ol class="timeline-list is-condensed" data-tl-list>
+    {% set ns = namespace(prev_year=None) %}
+    {% for ev in timeline %}
+    {% if ev.date.year != ns.prev_year %}
+    <li class="timeline-year-marker"><span>{{ ev.date.year }}</span></li>
+    {% set ns.prev_year = ev.date.year %}
+    {% endif %}
+    <li class="timeline-item timeline-kind-{{ ev.kind }}" data-tl-item="{{ ev.kind }}">
+      <div class="timeline-date tnum">{{ ev.date.strftime('%b %d') }}</div>
+      <span class="timeline-dot" aria-hidden="true"></span>
+      <div class="timeline-body">
+        <span class="timeline-chip">{{ ev.kind | replace('_', ' ') }}</span>
+        {% if ev.url %}<a class="timeline-title" href="{{ ev.url }}" rel="nofollow noopener">{{ ev.title }}</a>{% else %}<span class="timeline-title">{{ ev.title }}</span>{% endif %}
+        {% if ev.source or ev.detail %}
+        <div class="timeline-meta meta-text">
+          {% if ev.source %}<span class="timeline-source">{{ ev.source }}</span>{% endif %}
+          {% if ev.detail %}<span class="timeline-detail">{{ ev.detail }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</details>
 {% endif %}
 
 {# ---- Citations footer ---- #}

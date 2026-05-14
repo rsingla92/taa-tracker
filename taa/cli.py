@@ -14,9 +14,28 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Pick up ANTHROPIC_API_KEY, NCBI_API_KEY, EDGAR_USER_AGENT from .env
 
-from taa.normalize import filter_excluded, load_modality_map, trials_to_programs
+from taa.catalysts import extract_catalysts
+from taa.llm_narratives import (
+    annotate_catalysts,
+    index_commentary,
+    narrate_modalities,
+    pick_top_catalysts,
+)
+from taa.normalize import (
+    filter_excluded,
+    load_canonical_aliases,
+    load_modality_map,
+    trials_to_programs,
+)
 from taa.render import make_env, render_antigen, render_index
 from taa.schema import Antigen, AntigenData, TargetProductProfile
+from taa.snapshots import (
+    events_from_antigen_data,
+    load_timeline,
+    open_db,
+    record_snapshot,
+    upsert_timeline_events,
+)
 from taa.sources import (
     ctgov,
     edgar,
@@ -45,6 +64,11 @@ def _load_antigens() -> list[Antigen]:
 def _load_modality_map() -> dict[str, str]:
     raw = yaml.safe_load((DATA_DIR / "drug_modality.yaml").read_text())
     return load_modality_map(raw)  # type: ignore[return-value]
+
+
+def _load_canonical_aliases() -> dict[str, str]:
+    raw = yaml.safe_load((DATA_DIR / "drug_modality.yaml").read_text())
+    return load_canonical_aliases(raw)
 
 
 async def _refresh_one(antigen: Antigen) -> AntigenData:
@@ -86,7 +110,8 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
 
     trials = filter_excluded(ctgov_r.trials, antigen)
     modality_map = _load_modality_map()
-    programs, unknowns = trials_to_programs(trials, antigen, modality_map)  # type: ignore[arg-type]
+    aliases = _load_canonical_aliases()
+    programs, unknowns = trials_to_programs(trials, antigen, modality_map, aliases)  # type: ignore[arg-type]
 
     if unknowns:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -164,6 +189,13 @@ async def _refresh_all() -> None:
     env = make_env()
     rendered: list[AntigenData] = []
 
+    # v0.3 snapshot DB — opened once per refresh, records the run, accumulates
+    # the deduped historical timeline across runs.
+    snapshot_db = open_db(DATA_DIR / "snapshots.db")
+    snapshot_id = record_snapshot(snapshot_db, [a.slug for a in antigens])
+    conferences_path = DATA_DIR / "conferences.yaml"
+    today = datetime.now(timezone.utc).date()
+
     for antigen in antigens:
         data = await _refresh_one(antigen)
 
@@ -184,8 +216,31 @@ async def _refresh_all() -> None:
         # Load curated TPP if present
         tpp = _load_tpp(antigen.slug)
 
+        # v0.3: project this run's events into the snapshot DB and load the
+        # deduped historical timeline back (current run + all priors).
+        events = events_from_antigen_data(data)
+        new_count = upsert_timeline_events(snapshot_db, antigen.slug, events, snapshot_id)
+        timeline = load_timeline(snapshot_db, antigen.slug)
+        catalysts = extract_catalysts(antigen, data.trials, data.news, conferences_path, today)
+
+        # v0.3.1: LLM editorial layer — top picks, per-catalyst notes,
+        # per-modality narratives. Each returns None on any failure; renderer
+        # omits the section gracefully.
+        picks = await pick_top_catalysts(
+            antigen.primary_name, antigen.indication_tags, catalysts, tpp, data.programs
+        )
+        annotations = await annotate_catalysts(
+            antigen.primary_name, antigen.indication_tags, catalysts, tpp
+        )
+        modality_text = await narrate_modalities(antigen.primary_name, data.programs, tpp)
+
         # Render
-        html = render_antigen(data, env, synth=synth, tpp=tpp)
+        html = render_antigen(
+            data, env,
+            synth=synth, tpp=tpp,
+            catalysts=catalysts, timeline=timeline,
+            picks=picks, annotations=annotations, modality_narratives=modality_text,
+        )
         (DIST_DIR / f"{antigen.slug}.html").write_text(html)
 
         ot_drugs = len(data.open_targets.known_drugs) if data.open_targets else 0
@@ -195,13 +250,19 @@ async def _refresh_all() -> None:
             f"({len(data.programs)}p·{len(data.papers)}pap·{len(data.abstracts)}abs·"
             f"{len(data.preprints)}pre·{len(data.grants)}grnt·"
             f"{len(data.filings)}fil·{ot_drugs}OT·{len(data.news)}news·"
-            f"{len(data.fda_approvals)}FDA·{len(data.ema_approvals)}EMA{tpp_marker})",
+            f"{len(data.fda_approvals)}FDA·{len(data.ema_approvals)}EMA·"
+            f"{len(catalysts)}cat·{len(timeline)}tl[+{new_count}]{tpp_marker})",
             file=sys.stderr,
         )
         rendered.append(data)
 
+    snapshot_db.close()
+
+    # v0.3.1: cross-antigen commentary for the index page
+    commentary = await index_commentary(rendered)
+
     # Render the index page
-    index_html = render_index(rendered, env)
+    index_html = render_index(rendered, env, commentary=commentary)
     (DIST_DIR / "index.html").write_text(index_html)
 
     print(f"\nDone. {len(rendered)} antigen(s) rendered to dist/.", file=sys.stderr)

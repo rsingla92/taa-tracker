@@ -6,7 +6,20 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from taa.schema import AntigenData, Modality, Phase, Program, SynthOutput, TargetProductProfile
+from taa.schema import (
+    AntigenData,
+    Catalyst,
+    CatalystAnnotations,
+    CatalystPicks,
+    IndexCommentary,
+    Modality,
+    ModalityNarratives,
+    Phase,
+    Program,
+    SynthOutput,
+    TargetProductProfile,
+    TimelineEvent,
+)
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
@@ -59,6 +72,11 @@ def render_antigen(
     env: Environment | None = None,
     synth: SynthOutput | None = None,
     tpp: TargetProductProfile | None = None,
+    catalysts: list[Catalyst] | None = None,
+    timeline: list[TimelineEvent] | None = None,
+    picks: CatalystPicks | None = None,
+    annotations: CatalystAnnotations | None = None,
+    modality_narratives: ModalityNarratives | None = None,
 ) -> str:
     """Render one antigen scorecard page.
 
@@ -104,16 +122,31 @@ def render_antigen(
         grant_count=len(data.grants),
         paper_count=len(data.papers),
         filing_count=len(data.filings),
+        catalysts=catalysts or [],
+        timeline=timeline or [],
+        # LLM editorial layer. Convert to plain dicts for Jinja-friendly access.
+        # picks: dict[index → reason]; annotations: dict[index → note];
+        # modality_narratives: dict[modality → text].
+        picks_by_index={p.index: p.reason for p in (picks.picks if picks else [])},
+        annotations_by_index={a.index: a.note for a in (annotations.annotations if annotations else [])},
+        modality_text_by_key={
+            n.modality: n.text for n in (modality_narratives.narratives if modality_narratives else [])
+        },
     )
 
 
-def render_index(antigens: list[AntigenData], env: Environment | None = None) -> str:
+def render_index(
+    antigens: list[AntigenData],
+    env: Environment | None = None,
+    commentary: IndexCommentary | None = None,
+) -> str:
     env = env or make_env()
     tmpl = env.get_template("index.html")
     return tmpl.render(
         antigens=antigens,
         modality_summary_for=lambda d: _summarize_modalities(d.programs),
         modality_label=MODALITY_LABEL,
+        commentary=commentary.text if commentary else None,
     )
 
 
