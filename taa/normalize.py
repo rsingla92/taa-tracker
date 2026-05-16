@@ -49,6 +49,8 @@ def match_canonical_drug(
     drug_name: str,
     modality_map: dict[str, Modality],
     canonical_aliases: dict[str, str] | None = None,
+    drug_antigens: dict[str, str] | None = None,
+    antigen_slug: str | None = None,
 ) -> tuple[str, Modality] | None:
     """Look up a drug name and return (canonical_name, modality) if it matches.
 
@@ -65,9 +67,17 @@ def match_canonical_drug(
        like ``"T-DXd"`` / ``"DS-8201"`` / ``"Enhertu"`` all roll up under one
        canonical name (e.g. ``"Trastuzumab deruxtecan"``). If a key isn't in
        the alias map, the key itself is treated as canonical.
+
+    3. **Cross-antigen guard.** If the matched key is registered in
+       ``drug_antigens`` and its target antigen differs from ``antigen_slug``,
+       return None. Stops combo-trial cross-contamination (e.g., HS-20093
+       leaking into B7-H4 because it co-appears with HS-20089 in a Hansoh
+       combo study). Drugs not in drug_antigens fall through unchanged so
+       generic markers ("CAR-T", "vaccine") continue to work.
     """
     drug_lc = drug_name.lower()
     aliases = canonical_aliases or {}
+    drug_antigens = drug_antigens or {}
     best_key: str | None = None
     best_len = 0
     best_modality: Modality | None = None
@@ -79,6 +89,10 @@ def match_canonical_drug(
             best_modality = modality
     if best_key is None or best_modality is None:
         return None
+    if antigen_slug is not None:
+        registered = drug_antigens.get(best_key)
+        if registered is not None and registered != antigen_slug:
+            return None
     canonical = aliases.get(best_key, best_key)
     return canonical, best_modality
 
@@ -88,6 +102,7 @@ def trials_to_programs(
     antigen: Antigen,
     modality_map: dict[str, Modality],
     canonical_aliases: dict[str, str] | None = None,
+    drug_antigens: dict[str, str] | None = None,
 ) -> tuple[list[Program], list[str]]:
     """Roll up trials → one Program per (canonical_drug, modality).
 
@@ -103,7 +118,15 @@ def trials_to_programs(
     Phase reflects the most-advanced phase across all rolled-up trials. Status
     is "active" if any trial is active, else "terminated" if any was terminated,
     else "unknown".
+
+    `drug_antigens` (drug → antigen-slug) prevents cross-contamination from
+    combo trials. Without it, a HER2 combo trial that lists both T-DXd and
+    HS-20089 would create a phantom HER2 Program for HS-20089 (and vice versa).
+    Any matched drug whose curated antigen != `antigen.slug` is dropped.
+    Drugs absent from drug_antigens (generic markers like "CAR-T", "vaccine")
+    fall through unchanged.
     """
+    drug_antigens = drug_antigens or {}
     # group_key = (canonical_drug, modality)
     groups: dict[tuple[str, Modality], list[Trial]] = defaultdict(list)
     sponsor_trials: dict[tuple[str, Modality], Counter[str]] = defaultdict(Counter)
@@ -112,7 +135,9 @@ def trials_to_programs(
     for trial in trials:
         sponsor = trial.sponsors[0] if trial.sponsors and trial.sponsors[0] else "Unknown"
         for intervention in trial.interventions or []:
-            match = match_canonical_drug(intervention, modality_map, canonical_aliases)
+            match = match_canonical_drug(
+                intervention, modality_map, canonical_aliases, drug_antigens, antigen.slug
+            )
             if match is None:
                 unknown_interventions.add(intervention)
                 continue
@@ -133,6 +158,10 @@ def trials_to_programs(
         # Citations: dedupe, then cap to top 6 most-recent for per-row display
         all_cites = sorted({cid for t in grp for cid in t.citation_ids})
         cite_ids = all_cites[:6]  # render cap; full list still lives in page footer
+        # Trial NCTs: dedupe (combo trials match multiple interventions and can
+        # land here twice). The renderer joins back to AntigenData.trials for
+        # per-trial PCDs + statuses.
+        trial_ncts = sorted({t.nct_id for t in grp})
 
         programs.append(
             Program(
@@ -140,11 +169,12 @@ def trials_to_programs(
                 modality=modality,
                 canonical_drug=canonical_drug,
                 sponsors=sponsors,
-                trial_count=len(grp),
+                trial_count=len(trial_ncts),
                 most_advanced_phase=phase,
                 status=status,
                 latest_update=latest,
                 citation_ids=cite_ids,
+                trial_ncts=trial_ncts,
             )
         )
 
@@ -215,3 +245,32 @@ def load_canonical_aliases(yaml_data: dict[str, Any]) -> dict[str, str]:
     if not isinstance(raw, dict):
         return {}
     return {str(k): str(v) for k, v in raw.items()}
+
+
+def load_drug_antigens(yaml_data: dict[str, Any]) -> dict[str, str]:
+    """Extract the ``drug_antigens`` map from drug_modality.yaml.
+
+    Structure:
+      drug_antigens:
+        "HS-20089": b7-h4
+        "HS-20093": b7-h3
+
+    Drives CT.gov query expansion so trials that only reference the drug
+    codename (not the antigen) still get retrieved. Returned as drug → slug.
+    """
+    raw = yaml_data.get("drug_antigens") or {}
+    if not isinstance(raw, dict):
+        return {}
+    return {str(k): str(v) for k, v in raw.items()}
+
+
+def drug_aliases_for_antigen(
+    drug_antigens: dict[str, str], antigen_slug: str
+) -> list[str]:
+    """Return the list of drug names registered as targeting this antigen.
+
+    The CT.gov source uses these as extra OR'd query terms so trials like
+    "HS-20089 in Patients With Ovarian Cancer" surface even though they
+    don't textually mention B7-H4 anywhere CT.gov indexes.
+    """
+    return sorted(d for d, slug in drug_antigens.items() if slug == antigen_slug)

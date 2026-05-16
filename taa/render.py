@@ -97,9 +97,39 @@ def render_antigen(
         (c for c in data.citations if c.id in referenced_ids), key=lambda c: c.id
     )
 
+    trials_by_nct = {t.nct_id: t for t in data.trials}
+
+    # Per-program ordered trial lists. BD readers want "what's the next
+    # readout?" up top, so we sort: future PCDs (active programs) first,
+    # then past PCDs (descending — most recent), then trials with no PCD.
+    # Sponsored handles a tie by NCT id for stable ordering.
+    today = data.generated_at.date()
+
+    def _trial_sort_key(t):
+        status_rank = 0 if t.status == "active" else 1
+        if t.primary_completion_date is None:
+            return (status_rank, 2, 0, t.nct_id)
+        if t.primary_completion_date >= today:
+            # Future PCDs ascending — soonest first.
+            return (status_rank, 0, t.primary_completion_date.toordinal(), t.nct_id)
+        # Past PCDs descending — most recent first (invert the ordinal).
+        return (status_rank, 1, -t.primary_completion_date.toordinal(), t.nct_id)
+
+    program_trials = {}
+    for p in data.programs:
+        ordered = []
+        for nct in p.trial_ncts:
+            t = trials_by_nct.get(nct)
+            if t is not None:
+                ordered.append(t)
+        ordered.sort(key=_trial_sort_key)
+        program_trials[(p.canonical_drug, p.modality)] = ordered
+
     return tmpl.render(
         antigen=data.antigen,
         programs=data.programs,
+        trials_by_nct=trials_by_nct,
+        program_trials=program_trials,
         citations=visible_citations,
         freshness=data.freshness,
         generated_at=data.generated_at,

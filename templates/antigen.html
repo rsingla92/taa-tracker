@@ -280,6 +280,19 @@
           {% if c.detail %}<div class="meta-text catalyst-detail">{{ c.detail }}</div>{% endif %}
           {% set ann = annotations_by_index.get(loop.index0) %}
           {% if ann %}<div class="catalyst-annotation">{{ ann }}</div>{% endif %}
+          {% if c.announcements %}
+          <ul class="catalyst-announcements">
+            {% for a in c.announcements %}
+            <li class="catalyst-announcement catalyst-announcement-{{ a.kind }}">
+              <span class="catalyst-announcement-kind">{{ a.kind }}</span>
+              {% if a.url %}<a class="catalyst-announcement-title" href="{{ a.url }}" rel="nofollow noopener">{{ a.title }}</a>{% else %}<span class="catalyst-announcement-title">{{ a.title }}</span>{% endif %}
+              <span class="meta-text catalyst-announcement-meta">
+                {{ a.source }}{% if a.published_at %} · <span class="tnum">{{ a.published_at.isoformat() }}</span>{% endif %}
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
         </td>
         <td class="meta-text catalyst-sponsor">{{ c.sponsor or '—' }}</td>
       </tr>
@@ -348,7 +361,7 @@
     {% endif %}
 
     <div class="programs-scroll{% if group | length > 5 %} programs-scroll-overflow{% endif %}">
-    <table class="programs sortable" data-sortable>
+    <table class="programs sortable" data-sortable data-program-table>
       <thead>
         <tr>
           <th data-sort="text">Drug</th>
@@ -360,10 +373,15 @@
           <th style="width: 110px;">Cite</th>
         </tr>
       </thead>
-      <tbody>
         {% for program in group %}
-        <tr>
-          <td><strong>{{ program.canonical_drug }}</strong></td>
+          {% set ptrials = program_trials.get((program.canonical_drug, program.modality), []) %}
+          {% set has_trials = ptrials | length > 0 %}
+      <tbody class="program-group">
+        <tr class="program-row{% if has_trials %} program-row-expandable{% endif %}"{% if has_trials %} data-program-toggle aria-expanded="false" tabindex="0" role="button" aria-label="Show trials for {{ program.canonical_drug }}"{% endif %}>
+          <td class="program-drug-cell">
+            {% if has_trials %}<span class="program-toggle" aria-hidden="true">▸</span>{% endif %}
+            <strong>{{ program.canonical_drug }}</strong>
+          </td>
           <td class="sponsors-cell">
             {% set top = program.sponsors[:2] %}
             {% set rest = program.sponsors | length - top | length %}
@@ -377,8 +395,40 @@
             {% for cid in program.citation_ids %}<a class="cite" href="#cite-{{ cid }}">[{{ cid }}]</a>{% endfor %}
           </td>
         </tr>
-        {% endfor %}
+        {% if has_trials %}
+        <tr class="program-trials-row" hidden>
+          <td colspan="7" class="program-trials-cell">
+            <div class="program-trials-wrap">
+              <div class="program-trials-label">Trials rolled into this program · click <a href="https://clinicaltrials.gov/study/{{ ptrials[0].nct_id }}" rel="nofollow noopener">NCT</a> to open on CT.gov · ordered by upcoming primary completion</div>
+              <ul class="program-trials-list">
+              {% for t in ptrials %}
+                <li class="program-trial program-trial-status-{{ t.status }}{% if t.primary_completion_date and t.primary_completion_date >= generated_at.date() %} program-trial-future{% endif %}">
+                  <a class="program-trial-nct mono" href="https://clinicaltrials.gov/study/{{ t.nct_id }}" rel="nofollow noopener">{{ t.nct_id }}</a>
+                  <span class="program-trial-phase phase-{{ t.phase | replace('/', '-') }}">P{{ t.phase }}</span>
+                  <span class="program-trial-status status-{{ t.status }}">{{ t.status }}</span>
+                  {% if t.primary_completion_date %}
+                    <span class="program-trial-pcd tnum"
+                          title="{{ 'actual' if t.primary_completion_is_actual else 'estimated primary completion date' }}">
+                      {% if not t.primary_completion_is_actual %}~{% endif %}PCD {{ t.primary_completion_date.isoformat() }}
+                    </span>
+                  {% else %}
+                    <span class="program-trial-pcd meta-text">PCD —</span>
+                  {% endif %}
+                  {% if t.location_countries %}
+                    {% set countries = t.location_countries[:3] %}
+                    {% set extra = t.location_countries | length - countries | length %}
+                    <span class="program-trial-loc meta-text">{{ countries | join(', ') }}{% if extra > 0 %} +{{ extra }}{% endif %}</span>
+                  {% endif %}
+                  <div class="program-trial-title">{{ t.title }}</div>
+                </li>
+              {% endfor %}
+              </ul>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
       </tbody>
+        {% endfor %}
     </table>
     </div>
   </section>

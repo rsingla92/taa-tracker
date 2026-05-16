@@ -14,6 +14,13 @@
 # deruxtecan) should ALL appear in the modality section AND get mapped to one
 # canonical name in the `canonical_aliases` block at the bottom of this file.
 # Without an alias entry, each name becomes its own Program row.
+#
+# `drug_antigens:` (further down) maps drug → antigen slug so the CT.gov query
+# can ALSO retrieve trials whose title/intervention doesn't textually mention
+# the antigen (e.g., "HS-20089 in Patients With Ovarian Cancer" never says
+# B7-H4 anywhere). Without that map, alias-only CT.gov queries silently miss
+# programs whose internal codename isn't antigen-derived. Coverage audit at
+# refresh time flags any drug in drug_antigens with zero CT.gov hits.
 
 # ---- Canonical aliases (collapse synonyms into one Program) -------------------
 # Maps every alias → primary display name. Used by trials_to_programs to roll
@@ -141,6 +148,7 @@ adc:
   - "AZD8205"
   - "XMT-1660"
   - "BG-C9074"
+  - "HS-20089"  # Hansoh B7-H4 ADC, licensed to GSK 2024
   # B7-H3 ADCs (additions surfaced from Phase 2+ unmapped audit)
   - "GSK5764227"
   - "MHB088C"
@@ -333,3 +341,206 @@ radioligand:
   # B7-H3 radioligands
   - "131I-omburtamab"
   - "I-131 omburtamab"
+
+# ---- Drug → antigen registry --------------------------------------------------
+# Maps a drug name (or alias) to the antigen slug it targets. Used by the CT.gov
+# source to expand its alias-based query: trials whose title/intervention only
+# mentions the drug codename ("HS-20089 in Ovarian Cancer") are otherwise
+# silently dropped because the antigen alias regex doesn't match.
+#
+# **Maintenance rule.** Every drug listed in a modality section above whose
+# target is a specific antigen in data/antigens.yaml MUST appear here. The
+# coverage audit run at the end of `taa-refresh` writes a warning to
+# `data/_coverage-{slug}.txt` for any drug in this map that returned zero
+# CT.gov hits — catches licensing-handoff relabels (Hansoh → GSK, etc.) and
+# drugs that genuinely have no CT.gov footprint.
+#
+# Generic markers ("CAR-T", "vaccine", "radioligand", "Lu-177", etc.) are NOT
+# listed here because they're not antigen-specific.
+drug_antigens:
+  # ---- HER2 ----
+  "T-DXd": her2
+  "DS-8201": her2
+  "trastuzumab deruxtecan": her2
+  "Enhertu": her2
+  "T-DM1": her2
+  "ado-trastuzumab": her2
+  "Kadcyla": her2
+  "SYD985": her2
+  "trastuzumab duocarmazine": her2
+  "vic-trastuzumab": her2
+  "disitamab vedotin": her2
+  "RC48": her2
+  "ARX788": her2
+  "MRG002": her2
+  "BB-1701": her2
+  "trastuzumab": her2
+  "Herceptin": her2
+  "pertuzumab": her2
+  "Perjeta": her2
+  "margetuximab": her2
+  "Margenza": her2
+  "zanidatamab": her2
+  "ZW25": her2
+  "ZW49": her2
+  "petosemtamab": her2
+  "MCLA-129": her2
+  "GEN1046": her2
+  "ABBV-400": her2
+  "BNT142": her2
+  "SHR-A1811": her2
+  "BAT8001": her2
+  "BDC-1001": her2
+  "BNT323": her2
+  "A166": her2
+  "BL-M07D1": her2
+  "ALT-P7": her2
+  "TQB2102": her2
+  "ABP 980": her2
+  "ABP-980": her2
+
+  # ---- BCMA ----
+  "belantamab mafodotin": bcma
+  "GSK2857916": bcma
+  "Blenrep": bcma
+  "teclistamab": bcma
+  "Tecvayli": bcma
+  "elranatamab": bcma
+  "Elrexfio": bcma
+  "linvoseltamab": bcma
+  "ABBV-383": bcma
+  "ciltacabtagene": bcma
+  "Carvykti": bcma
+  "idecabtagene": bcma
+  "Abecma": bcma
+  "JCARH125": bcma
+  "orva-cel": bcma
+  "ARI-0002h": bcma
+  "GC012F": bcma
+  "bb21217": bcma
+  "ALLO-605": bcma
+  "ALLO-715": bcma
+  "CT103A": bcma
+  "CTX120": bcma
+  "C-CAR088": bcma
+  "C-CAR168": bcma
+  "PHE885": bcma
+  "MCARH109": bcma
+  "MCARH125": bcma
+  "Descartes-08": bcma
+  "AZD0120": bcma
+  "P-BCMA": bcma
+  "CM336": bcma
+  "alnuctamab": bcma
+  "TNB-383B": bcma
+  "REGN5459": bcma
+  "anti-BCMA/CD3 bispecific": bcma
+  "BCMA/CD3 bispecific": bcma
+
+  # ---- CLDN18.2 ----
+  "zolbetuximab": cldn18-2
+  "Vyloy": cldn18-2
+  "IMAB362": cldn18-2
+  "CMG901": cldn18-2
+  "AZD0901": cldn18-2
+  "TST001": cldn18-2
+  "LM-302": cldn18-2
+  "RC118": cldn18-2
+  "JS107": cldn18-2
+  "Sonesitatug vedotin": cldn18-2
+  "EO-3021": cldn18-2
+  "LM-102": cldn18-2
+  "SHR-A1904": cldn18-2
+  "AZD5863": cldn18-2
+  "Q-1802": cldn18-2
+  "AK132": cldn18-2
+  "AMG 910": cldn18-2
+  "AMG910": cldn18-2
+  "IBI345": cldn18-2
+  "Givastomig": cldn18-2
+  "Rilvegostomig": cldn18-2
+  "CT041": cldn18-2
+  "satricabtagene autoleucel": cldn18-2
+  "CT048": cldn18-2
+  "LB1908": cldn18-2
+  "TAC01": cldn18-2
+  "BNT211": cldn18-2
+
+  # ---- B7-H3 ----
+  "ifinatamab deruxtecan": b7-h3
+  "DS-7300": b7-h3
+  "I-DXd": b7-h3
+  "vobramitamab duocarmazine": b7-h3
+  "MGC018": b7-h3
+  "HS-20093": b7-h3
+  "YL201": b7-h3
+  "BAT8009": b7-h3
+  "DB-1311": b7-h3
+  "ABBV-969": b7-h3
+  "GSK5764227": b7-h3
+  "MHB088C": b7-h3
+  "Risvutatug rezetecan": b7-h3
+  "Ris-Rez": b7-h3
+  "enoblituzumab": b7-h3
+  "MGA271": b7-h3
+  "omburtamab": b7-h3
+  "8H9": b7-h3
+  "131I-omburtamab": b7-h3
+  "I-131 omburtamab": b7-h3
+  "B7-H3 x CD3": b7-h3
+  "MGD009": b7-h3
+  "orlotamab": b7-h3
+  "obrindatamab": b7-h3
+  "HLX316": b7-h3
+  "B7-H3 CAR": b7-h3
+  "CD276 CAR": b7-h3
+  "4SCAR-276": b7-h3
+  "TAA06": b7-h3
+  "iC9-CAR.B7-H3": b7-h3
+  "SJCARB7H3": b7-h3
+  "QH104": b7-h3
+
+  # ---- 5T4 ----
+  "ASN004": 5t4
+  "naptumomab": 5t4
+  "SYD1875": 5t4
+  "TUB-030": 5t4
+  "ALG.APV-527": 5t4
+  "APV-527": 5t4
+  "GEN1044": 5t4
+  "CBA-1535": 5t4
+  "TroVax": 5t4
+  "MVA-5T4": 5t4
+  "5T4 CAR": 5t4
+  "TPBG CAR": 5t4
+
+  # ---- ROR1 ----
+  "zilovertamab vedotin": ror1
+  "VLS-101": ror1
+  "MK-2140": ror1
+  "Zilovertamab": ror1
+  "cirmtuzumab": ror1
+  "UC-961": ror1
+  "NBE-002": ror1
+  "LCB71": ror1
+  "CS5001": ror1
+  "ABBV-1011": ror1
+  "NVG-111": ror1
+  "NM32-2668": ror1
+  "LYL797": ror1
+  "ONCT-808": ror1
+  "LYL845": ror1
+  "4SCAR-ROR1": ror1
+  "ROR1 CAR": ror1
+
+  # ---- B7-H4 ----
+  "puxitatug samrotecan": b7-h4
+  "AZD8205": b7-h4
+  "XMT-1660": b7-h4
+  "BG-C9074": b7-h4
+  "HS-20089": b7-h4  # Hansoh B7-H4 ADC; licensed to GSK 2024 — add new GSK code here when published
+  "FPA150": b7-h4
+  "ABL103": b7-h4
+  "GEN1047": b7-h4
+  "PF-07260437": b7-h4
+  "LNCB74": b7-h4

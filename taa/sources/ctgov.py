@@ -64,8 +64,12 @@ class CtgovResult:
         self.freshness = freshness
 
 
-async def fetch(antigen: Antigen, citation_id_start: int = 1) -> CtgovResult:
-    """Fetch all trials matching any antigen alias.
+async def fetch(
+    antigen: Antigen,
+    citation_id_start: int = 1,
+    extra_drug_aliases: list[str] | None = None,
+) -> CtgovResult:
+    """Fetch all trials matching any antigen alias OR any extra drug alias.
 
     Returns trials + a Citation for each trial (one cite per NCT id) + a freshness
     record for the stale-data UX. citation_id_start lets the caller continue
@@ -73,11 +77,27 @@ async def fetch(antigen: Antigen, citation_id_start: int = 1) -> CtgovResult:
 
     Query is constrained to intervention name + title fields (not full text)
     to suppress the "alias matches every neurology trial" failure mode (e.g.,
-    "NEU" matching neurology / neuroendocrine / neutropenia studies). Aliases
-    that need broader matching can be added with explicit field hints in v0.2.
+    "NEU" matching neurology / neuroendocrine / neutropenia studies).
+
+    `extra_drug_aliases` widens the search to drug names known to target this
+    antigen (from drug_modality.yaml `drug_antigens`). Without it, trials whose
+    title only mentions a proprietary codename ("HS-20089 in Ovarian Cancer")
+    are silently dropped because no antigen alias appears in the indexable
+    fields. Per-antigen exclude_terms downstream prevent cross-contamination
+    when a drug ends up being relabelled.
     """
     attempt_at = datetime.now(UTC)
     aliases = [antigen.primary_name, *antigen.aliases]
+    if extra_drug_aliases:
+        aliases.extend(extra_drug_aliases)
+    # Dedupe while preserving order; quote-escape any embedded double-quotes.
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for a in aliases:
+        if a and a not in seen:
+            seen.add(a)
+            deduped.append(a.replace('"', '\\"'))
+    aliases = deduped
     # AREA filter: search only Intervention name + BriefTitle + OfficialTitle.
     # CT.gov v2 query syntax: AREA[FieldName]"value"
     alias_clauses = [

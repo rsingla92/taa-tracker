@@ -200,6 +200,11 @@ class Program(BaseModel):
     status: Status = "active"
     latest_update: date | None = None
     citation_ids: list[int] = Field(default_factory=list)
+    # NCT IDs of every trial that rolled up into this Program. Renderer joins
+    # back to the AntigenData.trials list to surface per-program PCDs +
+    # statuses — answers the BD reader's question "when's the next readout
+    # for this drug?" without forcing them to scan CT.gov.
+    trial_ncts: list[str] = Field(default_factory=list)
 
 
 # ---- Stale-source tracking -----------------------------------------------------
@@ -329,6 +334,23 @@ CatalystKind = Literal[
 ]
 
 
+class CatalystAnnouncement(BaseModel):
+    """A press release or abstract tied to a specific conference catalyst.
+
+    Conference rows (ASCO/ESMO/SITC/etc.) are low signal on their own —
+    knowing ESMO is Oct 16 doesn't tell you who's presenting what. Each
+    Announcement attaches an actual sponsor pre-announcement (press release
+    that mentions the conference name + year) or a PubMed-indexed abstract
+    so the conference catalyst becomes "who is presenting what, when".
+    """
+
+    title: str
+    source: str  # publisher (FierceBiotech, PRNewswire) or "PubMed · {journal}"
+    url: str
+    published_at: date | None = None
+    kind: Literal["news", "abstract"] = "news"
+
+
 class Catalyst(BaseModel):
     """A forward-looking event that will change the antigen landscape.
 
@@ -345,6 +367,7 @@ class Catalyst(BaseModel):
     url: str | None = None  # link to trial / conference / press release
     sponsor: str | None = None
     is_anticipated: bool = False  # True for ESTIMATED PCDs or guidance windows
+    announcements: list[CatalystAnnouncement] = Field(default_factory=list)  # conferences only
 
 
 TimelineEventKind = Literal[

@@ -22,8 +22,10 @@ from taa.llm_narratives import (
     pick_top_catalysts,
 )
 from taa.normalize import (
+    drug_aliases_for_antigen,
     filter_excluded,
     load_canonical_aliases,
+    load_drug_antigens,
     load_modality_map,
     trials_to_programs,
 )
@@ -71,6 +73,35 @@ def _load_canonical_aliases() -> dict[str, str]:
     return load_canonical_aliases(raw)
 
 
+def _load_drug_antigens() -> dict[str, str]:
+    raw = yaml.safe_load((DATA_DIR / "drug_modality.yaml").read_text())
+    return load_drug_antigens(raw)
+
+
+def _coverage_audit(
+    antigen_slug: str,
+    expected_drugs: list[str],
+    trials: list,
+) -> list[str]:
+    """Return drugs in `expected_drugs` that no retrieved trial references.
+
+    A drug is considered "covered" if it appears as a case-insensitive substring
+    of any trial's title or any of its interventions. Drugs with zero hits are
+    surfaced as a hard signal that the CT.gov query didn't find anything for a
+    drug we curated — typically a licensing relabel (Hansoh → GSK) or an
+    intentionally-preclinical entry. Both deserve human attention.
+    """
+    missing: list[str] = []
+    haystacks = [
+        " | ".join([t.title, *t.interventions]).lower() for t in trials
+    ]
+    for drug in expected_drugs:
+        needle = drug.lower()
+        if not any(needle in h for h in haystacks):
+            missing.append(drug)
+    return missing
+
+
 async def _refresh_one(antigen: Antigen) -> AntigenData:
     """Pull all 4 sources concurrently, normalize, return AntigenData.
 
@@ -83,10 +114,15 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
     """
     print(f"  fetching {antigen.primary_name}…", file=sys.stderr)
 
+    drug_antigens = _load_drug_antigens()
+    extra_drug_aliases = drug_aliases_for_antigen(drug_antigens, antigen.slug)
+
     # Per-source semaphores live in each module — these tasks all share the asyncio
     # event loop and respect their own rate limits independently. Citation ID ranges
     # keep page-local IDs unique across sources without coordination.
-    ctgov_task = asyncio.create_task(ctgov.fetch(antigen, citation_id_start=1))
+    ctgov_task = asyncio.create_task(
+        ctgov.fetch(antigen, citation_id_start=1, extra_drug_aliases=extra_drug_aliases)
+    )
     pubmed_task = asyncio.create_task(pubmed.fetch(antigen, citation_id_start=10000))
     abstracts_task = asyncio.create_task(
         pubmed.fetch_conference_abstracts(antigen, citation_id_start=15000)
@@ -111,11 +147,41 @@ async def _refresh_one(antigen: Antigen) -> AntigenData:
     trials = filter_excluded(ctgov_r.trials, antigen)
     modality_map = _load_modality_map()
     aliases = _load_canonical_aliases()
-    programs, unknowns = trials_to_programs(trials, antigen, modality_map, aliases)  # type: ignore[arg-type]
+    programs, unknowns = trials_to_programs(
+        trials, antigen, modality_map, aliases, drug_antigens  # type: ignore[arg-type]
+    )
 
     if unknowns:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         (DATA_DIR / f"_unknowns-{antigen.slug}.txt").write_text("\n".join(unknowns) + "\n")
+
+    # Coverage audit: every drug curated as targeting this antigen should have
+    # at least one trial mentioning it. Zero-hit drugs typically mean a
+    # licensing relabel (e.g., Hansoh → GSK) where the canonical codename
+    # changed on CT.gov, or a preclinical drug with no registered trial.
+    # Either way the human curator needs to know — silent dropouts are how
+    # we missed HS-20089 (B7-H4 / GSK) and HS-20093 (B7-H3 / Hansoh) in v0.3.
+    missing_drugs = _coverage_audit(antigen.slug, extra_drug_aliases, ctgov_r.trials)
+    if missing_drugs:
+        (DATA_DIR / f"_coverage-{antigen.slug}.txt").write_text(
+            "# Drugs in drug_antigens[{slug}] with zero CT.gov hits.\n"
+            "# Resolve by adding the new alias to drug_modality.yaml + drug_antigens,\n"
+            "# or by removing the entry if the program is dead/preclinical.\n".format(
+                slug=antigen.slug
+            )
+            + "\n".join(missing_drugs)
+            + "\n"
+        )
+        print(
+            f"  [coverage] {antigen.slug}: {len(missing_drugs)} curated drug(s) "
+            f"with zero CT.gov hits → data/_coverage-{antigen.slug}.txt",
+            file=sys.stderr,
+        )
+    else:
+        # Clean up a stale coverage file from a previous run.
+        cov_file = DATA_DIR / f"_coverage-{antigen.slug}.txt"
+        if cov_file.exists():
+            cov_file.unlink()
 
     # FDA + EMA: query against the curated drug list (fast, deterministic)
     drug_names = [d.canonical_drug for d in programs if d.canonical_drug]
@@ -221,7 +287,14 @@ async def _refresh_all() -> None:
         events = events_from_antigen_data(data)
         new_count = upsert_timeline_events(snapshot_db, antigen.slug, events, snapshot_id)
         timeline = load_timeline(snapshot_db, antigen.slug)
-        catalysts = extract_catalysts(antigen, data.trials, data.news, conferences_path, today)
+        catalysts = extract_catalysts(
+            antigen,
+            data.trials,
+            data.news,
+            conferences_path,
+            today,
+            abstracts=data.abstracts,
+        )
 
         # v0.3.1: LLM editorial layer — top picks, per-catalyst notes,
         # per-modality narratives. Each returns None on any failure; renderer
