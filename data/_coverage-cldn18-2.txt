@@ -1,0 +1,6 @@
+# Drugs in drug_antigens[cldn18-2] with zero CT.gov hits.
+# Resolve by adding the new alias to drug_modality.yaml + drug_antigens,
+# or by removing the entry if the program is dead/preclinical.
+AMG910
+BNT211
+satricabtagene autoleucel

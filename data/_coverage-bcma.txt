@@ -1,0 +1,5 @@
+# Drugs in drug_antigens[bcma] with zero CT.gov hits.
+# Resolve by adding the new alias to drug_modality.yaml + drug_antigens,
+# or by removing the entry if the program is dead/preclinical.
+ARI-0002h
+orva-cel
