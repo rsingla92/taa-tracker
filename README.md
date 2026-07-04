@@ -1,88 +1,87 @@
 # TAA Tracker
 
-One scorecard per drug target, built from 11 public biotech data feeds and grounded in real citations.
+A citation-grounded scorecard pipeline for tumor-associated antigen drug programs, built from 11 public biotech data sources for biotech BD and corp-dev readers.
 
-**Rohit Singla** · rsingla@ece.ubc.ca · [LinkedIn](https://www.linkedin.com/in/rsingla92/)
-
-**Status:** v0.3 — 7 [tumor-associated antigens](https://en.wikipedia.org/wiki/Tumor_antigen) tracked · 11 sources · citation-grounded LLM synthesis · curated TPP benchmark layer · snapshot DB · upcoming-catalysts view · historic timeline.
+**Author.** Rohit Singla, rsingla@ece.ubc.ca, [LinkedIn](https://www.linkedin.com/in/rsingla92/)
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│ 11 PUBLIC SOURCES  (async, per-source rate limits)                │
-│ CT.gov, PubMed, PubMed abstracts, OpenAlex, EDGAR,                │
-│ Open Targets, News RSS, Europe PMC, NIH RePORTER,                 │
-│ openFDA, EMA EPAR                                                 │
-└──────────────────────────────────────────────────────────────────┘
-                                 │  raw Trial / Paper / Filing / Grant rows
-                                 ▼
-┌──────────────────────────────────────────────────────────────────┐
-│ NORMALIZE  (taa/normalize.py)                                     │
-│ alias match (longest-substring, cross-antigen guard)              │
-│ -> exclude rules (curated false-positive filter)                  │
-│ -> modality lookup (data/drug_modality.yaml)                      │
-└──────────────────────────────────────────────────────────────────┘
-                                 │  Program rollups (citation_ids, trial_ncts)
-                                 ▼
-┌──────────────────────────────────────────────────────────────────┐
-│ ENRICH                                                            │
-│ TPP benchmark, catalyst date extraction (regex)                   │
-│ -> citation-grounded LLM synthesis (Claude Haiku, strict          │
-│    JSON, validated against real citation IDs)                     │
-└──────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌──────────────────────────────────────────────────────────────────┐
-│ SNAPSHOT DB  (SQLite, taa/snapshots.py)                           │
-│ content-hash dedupe -> union of events across every               │
-│ historical refresh, survives RSS feed rollover                    │
-└──────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌──────────────────────────────────────────────────────────────────┐
-│ RENDER  (Jinja2 -> static HTML)                                   │
-│ scorecard per antigen + cross-antigen index                       │
-└──────────────────────────────────────────────────────────────────┘
+    ┌──────────────────────────────────────────────────────────────┐
+    │ Can 11 scattered public biotech feeds resolve into           │
+    │ one scorecard a BD analyst can actually trust?               │
+    │                                                              │
+    │ sources  CT.gov, PubMed, OpenAlex, EDGAR, Open Targets,      │
+    │          News RSS, Europe PMC, NIH RePORTER, openFDA, EMA    │
+    │               │                                              │
+    │               ▼                                              │
+    │         alias match (longest-substring,                      │
+    │         cross-antigen guard)                                 │
+    │               │                                              │
+    │               ▼                                              │
+    │         exclude rules (curated false-positive filter)        │
+    │               │                                              │
+    │               ▼                                              │
+    │         modality lookup (curated YAML)  ──▶  Program         │
+    │               │                                              │
+    │               ▼                                              │
+    │         citation-grounded LLM synthesis                      │
+    │         (strict JSON, validated against real citation IDs)   │
+    │               │                                              │
+    │               ▼                                              │
+    │         snapshot DB (SQLite, content-hash dedupe)            │
+    │               │                                              │
+    │               ▼                                              │
+    │         static HTML scorecard, per antigen + index           │
+    │                                                              │
+    │   Every Program carries citation_ids + trial_ncts.           │
+    │   No valid citation -> the sentence is dropped, not shown.   │
+    └──────────────────────────────────────────────────────────────┘
 ```
 
 ## Table of contents
 
-- [Current state](#current-state)
-- [Antigens tracked](#antigens-tracked)
+- [What it looks like](#what-it-looks-like)
+- [Current status](#current-status)
 - [How this project came about](#how-this-project-came-about)
 - [What this project is](#what-this-project-is)
-- [Why it's designed this way](#why-its-designed-this-way)
-- [Why the results look the way they do](#why-the-results-look-the-way-they-do)
-- [Completed work](#completed-work)
-- [Running it](#running-it)
-- [CLI entry points](#cli-entry-points)
+- [Why cross-source antigen tracking is a real problem](#why-cross-source-antigen-tracking-is-a-real-problem)
+- [How the pipeline is designed](#how-the-pipeline-is-designed)
 - [Data sources](#data-sources)
-- [Test suite](#test-suite)
-- [Installation](#installation)
-- [How I built this, and what I learned](#how-i-built-this-and-what-i-learned)
-- [Read these files first](#read-these-files-first)
-- [Roadmap](#roadmap)
+- [Results so far](#results-so-far)
+- [What is still open](#what-is-still-open)
+- [If you are skimming, look at these](#if-you-are-skimming-look-at-these)
+- [Repository layout](#repository-layout)
+- [How to reproduce](#how-to-reproduce)
+- [How this project was built, and how I used AI tools](#how-this-project-was-built-and-how-i-used-ai-tools)
+- [License](#license)
 
-## Current state
+## What it looks like
 
-**What is built:**
+<details>
+<summary><strong>HER2 scorecard header — the modality cross-cut grid</strong></summary>
 
-- Async clients for 11 public sources, each with its own rate-limit semaphore and graceful degradation (a stale-source banner rather than a crash if one API is down).
-- A normalization pipeline that rolls raw trial/paper/filing rows into per-drug `Program` records: alias matching, per-antigen exclude-term filtering, and a curated drug-to-modality lookup table.
-- A citation-grounded LLM synthesis layer (Claude Haiku, strict JSON output) where every sentence must cite a real citation ID or it gets dropped before rendering.
-- A curated [Target Product Profile](https://en.wikipedia.org/wiki/Target_product_profile) (TPP) benchmark layer, currently covering 5 of 7 tracked antigens.
-- An upcoming-catalysts view: [ClinicalTrials.gov](https://clinicaltrials.gov/) primary completion dates for active Phase 2+ trials, a curated oncology conference calendar, and regex-detected readout-guidance windows from news.
-- A SQLite snapshot database that content-hashes timeline events so they survive RSS feed rollover, producing a historic per-antigen timeline.
-- A human-in-the-loop curation tool (`taa-audit-matches`) for categorizing drug names the normalization pipeline doesn't recognize.
-- An editorial design system (see [`DESIGN.md`](DESIGN.md)) with sortable, printable scorecard tables.
+This is the signature visual element on every antigen page, shown before any data table: program counts and most-advanced phase per modality (ADC, mAb, bispecific, CAR-T, vaccine), plus jump-to-section navigation. HER2 is the anchor antigen, live at `dist/her2.html` after running `taa-refresh`.
 
-**Current results:**
+![HER2 scorecard header showing the modality cross-cut grid: 31 programs across 5 modalities, ADC leading with 15 programs at approved phase](docs/screenshot-her2.png)
 
-- Live scorecards for 7 antigens: HER2, BCMA, CLDN18.2, B7-H3, 5T4, ROR1, B7-H4.
-- No automated test suite yet. `pytest` is configured in `pyproject.toml` with markers for live-API tests, but no test files have been written. This is the most significant gap between what the tooling implies and what's actually verified.
-- TPP benchmarks exist for 5 of the 7 antigens (5T4 and B7-H4 don't have one curated yet).
-- The catalyst-date extractor is deliberately conservative (regex, not LLM) and will miss guidance phrasing it doesn't recognize rather than guess (see below).
+</details>
 
-## Antigens tracked
+## Current status
+
+- 7 antigens live: HER2, BCMA, CLDN18.2, B7-H3, 5T4, ROR1, B7-H4.
+- 11 source integrations running, each behind its own async rate-limit semaphore, degrading to a stale-source banner rather than a crash if one API is down.
+- Citation-grounded LLM synthesis and fail-closed validation: live on every antigen.
+- Snapshot DB, upcoming-catalysts view, and historic timeline (v0.3): live.
+- TPP benchmark layer: curated for 5 of 7 antigens. 5T4 and B7-H4 aren't curated yet.
+- Automated test suite: not started. `pytest` is configured in `pyproject.toml`; no test files exist yet.
+- Last data refresh: 2026-05-15.
+
+## How this project came about
+
+I kept running into the same problem doing biotech BD work: the picture of "who's developing what against this target" is scattered across a dozen sites that don't talk to each other. ClinicalTrials.gov has the trials, EDGAR has the corporate disclosure, PubMed and preprint servers have the biology, and none of them agree on what to call a drug. I wanted to know whether an LLM-assisted pipeline could stitch that together into something trustworthy enough to actually use, not a demo that looks good until you check the citations. HER2 was the first target because it's the most heavily trafficked tumor-associated antigen in oncology and a good stress test for the alias-matching logic before scaling to less common targets.
+
+## What this project is
+
+TAA Tracker pulls trial, publication, filing, approval, and grant data for a curated list of tumor-associated antigens from 11 free public APIs, normalizes it into per-drug program records, and renders a static HTML scorecard per antigen plus a cross-antigen index. Each scorecard includes the modality cross-cut grid shown above, a TPP benchmark comparison where curated, an LLM-written narrative synthesis where every claim traces back to a source citation, an upcoming-catalysts panel, and a historic timeline. The whole thing runs as a single CLI command (`taa-refresh`) intended to be cron-scheduled.
 
 | Slug | Antigen | Why it's interesting |
 | --- | --- | --- |
@@ -96,15 +95,15 @@ One scorecard per drug target, built from 11 public biotech data feeds and groun
 
 Add an antigen by appending to `data/antigens.yaml` and re-running `taa-refresh`.
 
-## How this project came about
+## Why cross-source antigen tracking is a real problem
 
-I kept running into the same problem doing biotech BD work: the picture of "who's developing what against this target" is scattered across a dozen sites that don't talk to each other. ClinicalTrials.gov has the trials, EDGAR has the corporate disclosure, PubMed and preprint servers have the biology, and none of them agree on what to call a drug. I wanted to know whether an LLM-assisted pipeline could stitch that together into something trustworthy enough to actually use, not just a demo that looks good until you check the citations. HER2 was the first target because it's the most heavily trafficked TAA in oncology and a good stress test for the alias-matching logic before scaling to less common targets.
+Paid competitive-intelligence platforms in biotech (Cortellis, GlobalData, Evaluate) already do a version of cross-source program tracking, but they're expensive, opaque about methodology, and slow to add newer or less-trafficked targets. The free public sources behind them, CT.gov, PubMed, EDGAR, and the rest, are individually open, but nobody stitches them together for free, and each one names drugs and sponsors differently enough that a naive join produces a mess.
 
-## What this project is
+This is a version of [entity resolution](https://en.wikipedia.org/wiki/Record_linkage), a well-studied classical problem in data engineering: deciding when two records from different systems refer to the same real-world entity. The standard production answer at scale isn't an open-vocabulary matcher, it's curated lookup tables plus a human-in-the-loop review step, precisely because an unreviewed false match is unacceptable when the output feeds a business decision. That's the pattern this project follows: alias matching against a curated table, explicit per-antigen exclude rules, and unresolved names surfaced for a person to categorize rather than guessed at by a model.
 
-TAA Tracker pulls trial, publication, filing, approval, and grant data for a curated list of tumor-associated antigens from 11 free public APIs, normalizes it into per-drug program records, and renders a static HTML scorecard per antigen plus a cross-antigen index. Each scorecard includes a modality cross-cut grid (ADC, CAR-T, bispecific, mAb, radioligand, vaccine, other), a TPP benchmark comparison where curated, an LLM-written narrative synthesis where every claim traces back to a source citation, an upcoming-catalysts panel, and a historic timeline. The whole thing runs as a single CLI command (`taa-refresh`) intended to be cron-scheduled.
+The alias-matching and modality-lookup approach here isn't new science. It's applying that established, curation-heavy discipline to a genuinely useful open dataset that nobody had bothered to assemble for free. The part that's less standard is the LLM synthesis layer: enforcing citation-grounding as a hard schema constraint, with every model-generated sentence checked against the real source-derived citation set before it's allowed to render, rather than trusting the model's self-reported citations. That pattern only became practical with production-grade structured-output APIs, and it's the piece of this pipeline I'd point to as the actual engineering bet.
 
-## Why it's designed this way
+## How the pipeline is designed
 
 **Alias matching is longest-substring with a cross-antigen guard, not exact match.** An early version matched on first hit, which meant a short generic term like "CAR-T" could swallow a longer, more specific drug name before the specific match was tried. It's longest-match now. There's also an explicit guard that drops a match if the matched drug is registered to a *different* antigen than the one being processed, because combination trials cross-contaminate otherwise: HS-20093 and HS-20089 are both Hansoh B7-H3/B7-H4 ADCs that co-appear in the same combination trials, and without the guard, HS-20093 leaks into the B7-H4 scorecard and vice versa.
 
@@ -112,66 +111,17 @@ TAA Tracker pulls trial, publication, filing, approval, and grant data for a cur
 
 **Modality is assigned from a curated YAML lookup table, not inferred.** Drug names that don't match anything in `data/drug_modality.yaml` are collected as unknowns rather than guessed at, and surfaced through `taa-audit-matches` for one-keypress human categorization. This is the actual scaling bottleneck for adding antigens past the current 7: `data/drug_modality.yaml` and each antigen's `exclude_terms` are the trust layer, and they're both hand-curated.
 
-**LLM synthesis is citation-grounded by schema, not by prompt instruction alone.** The model doesn't see raw trial text; it sees pre-summarized program rollups and a citation list restricted to IDs actually referenced by those programs. Every output sentence carries a `citation_ids` field, and a post-hoc validation step drops any sentence whose citation isn't in the real, source-derived citation set (`validate_against_citations` in `taa/synth.py`). If the API call fails, the JSON doesn't parse, or Pydantic validation fails, the synthesis is omitted entirely rather than shown partially wrong. This fail-closed pattern is used consistently: no synthesis is worse than fabricated synthesis.
+**LLM synthesis is citation-grounded by schema, not by prompt instruction alone.** The model doesn't see raw trial text; it sees pre-summarized program rollups and a citation list restricted to IDs actually referenced by those programs. Every output sentence carries a `citation_ids` field, and a post-hoc validation step drops any sentence whose citation isn't in the real, source-derived citation set (`validate_against_citations` in `taa/synth.py`). If the API call fails, the JSON doesn't parse, or Pydantic validation fails, the synthesis is omitted entirely rather than shown partially wrong.
 
-**Catalyst date extraction is regex, not LLM**, and deliberately trades recall for precision. It requires a data-signal keyword (topline, interim, primary endpoint, data readout, results) within 80 characters of a trigger word (expected, anticipated, by, in) followed by a parseable date phrase (a quarter, a half-year, a fuzzy bucket like "mid 2026", or a named month and year). Phrasing outside that pattern, like "on track for Q3" or "will report results in," is silently missed. That's intentional: a wrong catalyst date is worse than a missing one for a BD reader making a calendar decision, and running an LLM over every news item to catch more phrasing variants wasn't worth the added inference cost and hallucination surface for what is fundamentally a date-parsing problem.
+**Catalyst date extraction is regex, not LLM**, and deliberately trades recall for precision. It requires a data-signal keyword (topline, interim, primary endpoint, data readout, results) within 80 characters of a trigger word (expected, anticipated, by, in) followed by a parseable date phrase. Phrasing outside that pattern, like "on track for Q3" or "will report results in," is silently missed. A wrong catalyst date is worse than a missing one for a BD reader making a calendar decision.
 
-**The snapshot database dedupes on a content hash, not a source-native ID.** Each timeline event is hashed from its kind, date, truncated lowercase title, and query-stripped URL. RSS items and API records don't have stable IDs across refreshes (or the ID scheme differs per source), so a content hash is what makes "is this the same event I saw last refresh" answerable at all, and it's what lets the timeline survive a news item aging off a feed.
+**The snapshot database dedupes on a content hash, not a source-native ID.** Each timeline event is hashed from its kind, date, truncated lowercase title, and query-stripped URL. RSS items and API records don't have stable IDs across refreshes, or the ID scheme differs per source, so a content hash is what makes "is this the same event I saw last refresh" answerable at all.
 
-## Why the results look the way they do
-
-Every rendered program carries `citation_ids` and `trial_ncts`, so a BD reader can trace any claim on the page back to the actual [ClinicalTrials.gov](https://clinicaltrials.gov/) record, paper, or filing it came from. The synthesis paragraph is intentionally short and can be entirely absent for an antigen if the model didn't produce anything that survived citation validation; a missing paragraph means the pipeline had nothing it could stand behind, not that nothing happened for that antigen.
-
-The catalysts panel works the same way: an antigen with no listed catalysts doesn't mean no program has upcoming data, it means no news text matched the conservative extraction pattern closely enough to be trusted. This is the tradeoff described above, made visible in the output rather than hidden behind an artificially complete-looking list.
-
-The TPP layer only appears for 5 of 7 antigens because it's hand-curated against public label and guideline data, and curation hasn't caught up to the two newest antigens (5T4, B7-H4) yet.
-
-## Completed work
-
-| Version | Date | What shipped |
-| --- | --- | --- |
-| v0.1 | 2026-05-02 | HER2 vertical slice from CT.gov, 4 sources, 3 antigens, TPP table, `audit-matches` tool, editorial design system |
-| v0.2 | 2026-05-07 | Europe PMC preprints + NIH RePORTER (11 sources total), B7-H3/5T4/ROR1 added (6 antigens) |
-| v0.3 | 2026-05-15 | Snapshot DB, upcoming-catalysts view, historic timeline, drug→antigen registry, B7-H4 added (7 antigens) |
-
-Full detail in [`CHANGELOG.md`](CHANGELOG.md). Each version bump in the table above corresponds to a real data refresh, not just a code change; refreshed output for all 7 antigens is committed under `data/*.json`.
-
-## Running it
-
-**Interactive:**
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-
-cp .env.example .env  # add ANTHROPIC_API_KEY, NCBI_API_KEY, EDGAR_USER_AGENT
-
-taa-refresh
-open dist/index.html
-```
-
-**Automated / scripted:** `taa-refresh` is a single, idempotent CLI command with no required arguments, intended to be run on a schedule (cron or similar). It reads `data/antigens.yaml` for the antigen list and writes `data/{slug}.json`, updates `data/snapshots.db`, and renders `dist/`.
-
-**Individual tools:**
-
-```bash
-taa-refresh              # full pipeline: fetch, normalize, synthesize, render
-taa-audit                # coverage audit against curated drug lists
-taa-audit-matches        # interactive curation of unrecognized drug names
-```
-
-## CLI entry points
-
-| Command | Mode | What it does |
-| --- | --- | --- |
-| `taa-refresh` | Automated | Runs the full pipeline for every antigen in `data/antigens.yaml`: fetch all 11 sources, normalize, synthesize, extract catalysts, snapshot, render. |
-| `taa-audit` | Automated | Cross-checks normalized programs against curated drug lists per antigen and reports coverage gaps. |
-| `taa-audit-matches` | Interactive | One-keypress terminal tool to categorize drug names the normalizer didn't recognize into `data/drug_modality.yaml`. |
+**Scale.** A full refresh processes the 7 antigens sequentially; within each antigen, 9 of the 11 sources fetch concurrently under source-specific semaphores (5 req/s for CT.gov, 3 req/s for PubMed without an NCBI key, down to 2 req/s for NIH RePORTER out of courtesy to a single-tenant API). openFDA and EMA run afterward per antigen, since both query against the antigen's already-resolved drug list.
 
 ## Data sources
 
-Every source is free, public, and rate-limit-respectful. Each has its own asyncio semaphore matched to its published or reasonable-courtesy limit; failures degrade gracefully (a stale-source banner on the affected page, not a pipeline crash).
+Every source is free, public, and rate-limit-respectful. Each has its own asyncio semaphore matched to its published or reasonable-courtesy limit; failures degrade gracefully.
 
 | Source | Stream | Concurrency cap | Why it matters |
 | --- | --- | --- | --- |
@@ -187,11 +137,76 @@ Every source is free, public, and rate-limit-respectful. Each has its own asynci
 | [Europe PMC](https://europepmc.org/) preprints | bioRxiv / medRxiv | 6 | Leading indicator, 6-18 months ahead of PubMed. |
 | [NIH RePORTER](https://reporter.nih.gov/) | US-funded grants | 2 | Academic preclinical / translational pipeline (NCI, NHLBI, NIAID, NIDDK). |
 
-## Test suite
+## Results so far
 
-There isn't one yet. `pyproject.toml` configures `pytest` with `pytest-asyncio`, `pytest-cov`, and `respx` as dev dependencies, plus markers to separate live-API tests (`live_llm`, `live_http`) from unit tests, but no `tests/` directory exists in the repo. The normalization pipeline (alias matching, exclude rules, cross-antigen guard) and the citation-validation logic in `taa/synth.py` are the parts I'd prioritize testing first, since they're the parts a silent regression would be hardest to notice from the rendered output alone.
+### v0.1: HER2 vertical slice (2026-05-02)
 
-## Installation
+First end-to-end scorecard: HER2 from CT.gov, 4 sources, 3 antigens (HER2, BCMA, CLDN18.2), the v1 editorial design system, and the `audit-matches` curation tool. This is what proved the normalization approach actually held up against a heavily-trafficked, name-collision-prone target.
+
+### v0.2: scale to 11 sources, 6 antigens (2026-05-07)
+
+Added Europe PMC preprints and NIH RePORTER grants, plus B7-H3, 5T4, and ROR1. This is where the cross-antigen guard became necessary rather than theoretical: B7-H3 and B7-H4 share sponsors and combination trials, and the naive alias match leaked programs across antigen pages until the guard was added.
+
+### v0.3: snapshot DB, catalysts, timeline (2026-05-15)
+
+Added the SQLite snapshot database, the upcoming-catalysts view, the historic timeline, and B7-H4 as a seventh antigen.
+
+### What I learned so far
+
+- Free-form "cite your sources" prompting isn't enough on its own. The synthesis contract needed a hard structural check, which is why `taa/synth.py` validates every returned citation ID against the real citation set and drops anything that doesn't match, rather than trusting the model's self-reported citations.
+- Alias matching on first-hit was wrong. Short generic modality terms would match before the specific drug did, so match order had to change to longest-string-wins.
+- Combination trials break naive per-antigen matching. Two drugs from the same sponsor's combination trial for related targets will cross-contaminate each other's antigen pages unless there's an explicit guard rejecting a drug registered to a different antigen than the one currently being processed.
+- Automating modality assignment looked tempting but would have traded a small amount of manual curation time for an unbounded amount of silent misclassification risk, so it stayed a curated lookup table with unknowns explicitly surfaced for a human to categorize.
+- Catalyst-date guidance in news text is one of the least standardized things to parse. Rather than chase every phrasing variant with an LLM and inherit its hallucination risk for something as consequence-bearing as a date, the extractor stays regex-based and conservative, and simply omits catalysts it isn't confident about.
+
+## What is still open
+
+- No automated test suite yet. Priority order once started would be `taa/normalize.py` (alias/exclude/guard logic) and `taa/synth.py` (citation validation), since regressions there are the hardest to notice from the rendered output alone.
+- TPP curation gap: 5T4 and B7-H4 don't have a benchmark yet.
+- **v0.4**: snapshot diffs, "what changed since last refresh" per antigen. The snapshot DB already has what's needed; it's a diff query and a render away.
+- **v0.5**: cross-antigen whitespace heatmap (antigens x modalities, highlighting cells where Open Targets tractability is high but the clinical column is empty).
+- **v0.6**: scale to 25-50 antigens with client-side search and modality/indication filters on the index page.
+- **v0.7+**: LLM-based readout-date extraction to replace the regex, investor-deck PDF extraction, a real test suite, weekly digest email.
+
+## If you are skimming, look at these
+
+Five files worth opening if you want to see the actual work.
+
+1. **[`taa/schema.py`](taa/schema.py)** (505 lines). The data contracts. Closed-vocabulary `Literal` types and required citation IDs are what keep bad data from propagating downstream.
+2. **[`taa/normalize.py`](taa/normalize.py)** (276 lines). Alias matching, exclude rules, and modality assignment, the entity-resolution trust layer described above.
+3. **[`taa/synth.py`](taa/synth.py)** (258 lines). The citation-grounded LLM synthesis layer: strict JSON output, and a post-hoc validation step that drops any sentence whose citation isn't in the real citation set.
+4. **[`taa/catalysts.py`](taa/catalysts.py)** (414 lines). The regex-based, precision-over-recall catalyst date extractor.
+5. **[`taa/snapshots.py`](taa/snapshots.py)** (277 lines). The content-hash SQLite dedupe behind the historic timeline.
+
+## Repository layout
+
+```
+DESIGN.md                   Design system source of truth
+LICENSE                      MIT
+CHANGELOG.md                 Version history
+taa/
+  schema.py                  Pydantic data contracts
+  normalize.py                Alias matching, exclude rules, modality lookup
+  synth.py                    Citation-grounded LLM synthesis + validation
+  catalysts.py                Regex-based upcoming-catalyst extraction
+  snapshots.py                 SQLite snapshot DB, content-hash dedupe
+  render.py                   Jinja2 -> static HTML
+  audit_matches.py             Interactive drug-name curation tool
+  cli.py                       taa-refresh / taa-audit / taa-audit-matches entry points
+  sources/                     One async client per data source (11 total)
+templates/ + static/         Design system templates + system.css
+data/
+  antigens.yaml               Curated TAA universe (7 antigens)
+  drug_modality.yaml           Drug name -> modality lookup (hand-curated)
+  conferences.yaml             Curated oncology meeting calendar
+  tpp/*.yaml                   Curated Target Product Profiles (5 of 7 antigens)
+  snapshots.db                 SQLite snapshot history (committed)
+  {slug}.json                  Per-antigen refreshed output (7 files)
+```
+
+## How to reproduce
+
+Requires Python 3.11+.
 
 ```bash
 git clone git@github.com:rsingla92/taa-tracker.git
@@ -203,41 +218,25 @@ cp .env.example .env
 # edit .env: ANTHROPIC_API_KEY (required for synthesis), NCBI_API_KEY (optional,
 # raises PubMed rate limit from 3 req/s to 10 req/s), EDGAR_USER_AGENT (required
 # by SEC EDGAR — "Your Name your-email@example.com")
+
+taa-refresh              # full pipeline: fetch, normalize, synthesize, render
+open dist/index.html
 ```
 
-Requires Python 3.11+.
+```bash
+taa-audit                # coverage audit against curated drug lists
+taa-audit-matches        # interactive curation of unrecognized drug names
+```
 
-## How I built this, and what I learned
+## How this project was built, and how I used AI tools
 
-**What I owned:** the normalization rules (which aliases need exclude terms and why, the cross-antigen guard, the longest-substring match), the curated data (`drug_modality.yaml`, `antigens.yaml`, TPP benchmarks, the conference calendar), the citation-grounding contract for the LLM layer (what the model is and isn't allowed to assert, and how that gets checked in code rather than trusted), the precision-over-recall call on catalyst extraction, and the design system in `DESIGN.md`.
+This is a solo project, and I owned the pipeline end to end: which data sources to trust, how to resolve entity collisions between programs that share sponsors and combination trials, what an LLM is and isn't allowed to assert about a citation, and when a missing result (no synthesis, no TPP, no catalyst) is more honest than a filled-in guess. Claude Code was my execution collaborator across most of the build, and every source client, schema, and template went through my review before landing on `main`.
 
-**What AI accelerated:** the source client implementations (11 async HTTP clients with broadly similar retry/semaphore/pagination shapes), the Pydantic schema boilerplate, and the Jinja2 template scaffolding.
+**I owned:** the normalization rules (which aliases need exclude terms, the cross-antigen guard, the longest-substring match), the curated data (`drug_modality.yaml`, `antigens.yaml`, TPP benchmarks, the conference calendar), the citation-grounding contract for the LLM layer, the precision-over-recall call on catalyst extraction, and the design system in `DESIGN.md`.
 
-**Lessons:**
+**Claude Code accelerated:** the 11 async source clients (broadly similar retry/semaphore/pagination shapes once the first one was right), the Pydantic schema boilerplate, and the Jinja2 template scaffolding.
 
-- Free-form "cite your sources" prompting isn't enough on its own. The synthesis contract needed a hard structural check, not just prompt instructions, which is why `taa/synth.py` validates every returned citation ID against the real citation set built from actual API responses and drops anything that doesn't match, rather than trusting the model's self-reported citations.
-- Alias matching on first-hit was wrong. Short generic modality terms (like "CAR-T" appearing inside a longer specific drug name) would match before the specific drug did, so the match order had to change to longest-string-wins.
-- Combination trials break naive per-antigen matching. Two drugs from the same sponsor's combination trial for related targets (HS-20093 and HS-20089, both Hansoh B7-H3/B7-H4 ADCs) will cross-contaminate each other's antigen pages unless there's an explicit guard rejecting a drug that's registered to a different antigen than the one currently being processed.
-- Automating modality assignment looked tempting but would have traded a small amount of manual curation time for an unbounded amount of silent misclassification risk, so it stayed a curated lookup table with unknowns explicitly surfaced for a human to categorize, rather than inferred.
-- Catalyst-date guidance in news text is one of the least standardized things to parse: "expected Q3 2026," "topline data in mid-2026," and "on track for later this year" are all common phrasings and only some of them are safely machine-parseable. Rather than chase every variant with an LLM (and inherit its hallucination risk for something as consequence-bearing as a date), the extractor stays regex-based and conservative, and simply omits catalysts it isn't confident about.
-
-## Read these files first
-
-| File | Why |
-| --- | --- |
-| [`taa/schema.py`](taa/schema.py) | The data contracts. Closed-vocabulary `Literal` types and required citation IDs are what keep bad data from propagating downstream. |
-| [`taa/normalize.py`](taa/normalize.py) | Alias matching, exclude rules, and modality assignment — the trust layer described above. |
-| [`taa/synth.py`](taa/synth.py) | The citation-grounded LLM synthesis layer and its fail-closed validation. |
-| [`taa/catalysts.py`](taa/catalysts.py) | The regex-based, precision-over-recall catalyst date extractor. |
-| [`taa/snapshots.py`](taa/snapshots.py) | The content-hash SQLite dedupe behind the historic timeline. |
-| [`DESIGN.md`](DESIGN.md) | The design system: typography, color, and the anti-slop list of what this project deliberately avoids looking like. |
-
-## Roadmap
-
-- **v0.4**: snapshot diffs — "what changed since last refresh" per antigen (phase advances, new programs, withdrawn trials, terminated programs). The snapshot DB already has what's needed; it's a diff query and a render away.
-- **v0.5**: cross-antigen whitespace heatmap (antigens × modalities, highlighting cells where Open Targets tractability is high but the clinical column is empty).
-- **v0.6**: scale to 25-50 antigens with client-side search and modality/indication filters on the index page.
-- **v0.7+**: LLM-based readout-date extraction to replace the v0.3 regex, investor-deck PDF extraction, a real test suite, weekly digest email.
+The shape of this work matches what forward-deployed and applied engineering roles ask for: take an ambiguous, real-world data problem with no clean single API, own the judgment calls that make the output trustworthy rather than merely plausible, and ship a working system end to end rather than a notebook. Most of the actual engineering here is trust-layer work, deciding what a pipeline is allowed to assert automatically versus what needs a curated rule or a human in the loop, and staying close enough to the domain that a non-technical BD reader can rely on what's on the page without reading the code.
 
 ## License
 
