@@ -30,3 +30,7 @@ data/synthesis/
 # Unknown-intervention dumps (regenerated each refresh; bin/audit-matches consumes them)
 data/_unknowns-*.txt
 .gstack/
+
+# Internal refresh notes (not for public repo)
+REFRESH-SUMMARY.md
+REFRESH-SUMMARY.pdf
