@@ -43,6 +43,7 @@ A citation-grounded scorecard pipeline for tumor-associated antigen drug program
 - [Current status](#current-status)
 - [How this project came about](#how-this-project-came-about)
 - [What this project is](#what-this-project-is)
+- [How this project was built, and how I used AI tools](#how-this-project-was-built-and-how-i-used-ai-tools)
 - [Why cross-source antigen tracking is a real problem](#why-cross-source-antigen-tracking-is-a-real-problem)
 - [How the pipeline is designed](#how-the-pipeline-is-designed)
 - [Data sources](#data-sources)
@@ -51,15 +52,14 @@ A citation-grounded scorecard pipeline for tumor-associated antigen drug program
 - [If you are skimming, look at these](#if-you-are-skimming-look-at-these)
 - [Repository layout](#repository-layout)
 - [How to reproduce](#how-to-reproduce)
-- [How this project was built, and how I used AI tools](#how-this-project-was-built-and-how-i-used-ai-tools)
 - [License](#license)
 
 ## What it looks like
 
 <details>
-<summary><strong>HER2 scorecard header — the modality cross-cut grid</strong></summary>
+<summary><strong>HER2 scorecard header: the modality cross-cut grid</strong></summary>
 
-This is the signature visual element on every antigen page, shown before any data table: program counts and most-advanced phase per modality (ADC, mAb, bispecific, CAR-T, vaccine), plus jump-to-section navigation. HER2 is the anchor antigen, live at `dist/her2.html` after running `taa-refresh`.
+The modality cross-cut grid is the signature visual element on every antigen page, shown before any data table: program counts and most-advanced phase per modality (ADC, mAb, bispecific, CAR-T, vaccine), plus jump-to-section navigation. HER2 is the anchor antigen, live at `dist/her2.html` after running `taa-refresh`.
 
 ![HER2 scorecard header showing the modality cross-cut grid: 31 programs across 5 modalities, ADC leading with 15 programs at approved phase](docs/screenshot-her2.png)
 
@@ -89,19 +89,29 @@ TAA Tracker pulls trial, publication, filing, approval, and grant data for a cur
 | `bcma` | [BCMA](https://en.wikipedia.org/wiki/B-cell_maturation_antigen) / TNFRSF17 | Heme. Two approved CAR-Ts (Carvykti, Abecma) + Tecvayli bispecific. |
 | `cldn18-2` | [CLDN18.2](https://en.wikipedia.org/wiki/Claudin_18) | Hot post-zolbetuximab approval. Rapidly developing ADC + bispecific tier. |
 | `b7-h3` | [B7-H3](https://en.wikipedia.org/wiki/CD276) / CD276 | Pan-cancer ADC race (DS-7300, MGC018, HS-20093) + paediatric CAR-T. |
-| `5t4` | 5T4 / TPBG | Thin clinical pipeline, academic-heavy preclinical — preprints + grants matter. |
+| `5t4` | 5T4 / TPBG | Thin clinical pipeline, academic-heavy preclinical: preprints and grants matter more than trials. |
 | `ror1` | [ROR1](https://en.wikipedia.org/wiki/ROR1) | Zilovertamab vedotin (Merck) anchors. CAR-T tier growing (Lyell, Oncternal). |
-| `b7-h4` | B7-H4 / VTCN1 | Breast/ovarian/endometrial ADC race (AZD8205, XMT-1660, FPA150). Naming overlaps B7-H3 — alias matching is the gotcha. |
+| `b7-h4` | B7-H4 / VTCN1 | Breast/ovarian/endometrial ADC race (AZD8205, XMT-1660, FPA150). Naming overlaps B7-H3, which makes alias matching the gotcha. |
 
 Add an antigen by appending to `data/antigens.yaml` and re-running `taa-refresh`.
+
+## How this project was built, and how I used AI tools
+
+I built and ran this solo, owning the pipeline end to end: which data sources to trust, how to resolve entity collisions between programs that share sponsors and combination trials, what an LLM is and isn't allowed to assert about a citation, and when a missing result (no synthesis, no TPP, no catalyst) is more honest than a filled-in guess. Claude Code was my execution collaborator across most of the build, and every source client, schema, and template went through my review before landing on `main`.
+
+**I owned:** the normalization rules (which aliases need exclude terms, the cross-antigen guard, the longest-substring match), the curated data (`drug_modality.yaml`, `antigens.yaml`, TPP benchmarks, the conference calendar), the citation-grounding contract for the LLM layer, the precision-over-recall call on catalyst extraction, and the design system in `DESIGN.md`.
+
+**Claude Code accelerated:** the 11 async source clients (broadly similar retry/semaphore/pagination shapes once the first one was right), the Pydantic schema boilerplate, and the Jinja2 template scaffolding.
+
+Most of the real work here wasn't writing source clients. It was deciding what the pipeline is allowed to assert on its own versus what needs a curated rule or a human check, and doing that close enough to the domain that a BD reader can trust what's on the page without reading the code. That's the same call a forward-deployed or applied engineer makes constantly: an ambiguous, messy real-world problem with no clean API, and a system that has to hold up in use, not just demo well.
 
 ## Why cross-source antigen tracking is a real problem
 
 Paid competitive-intelligence platforms in biotech (Cortellis, GlobalData, Evaluate) already do a version of cross-source program tracking, but they're expensive, opaque about methodology, and slow to add newer or less-trafficked targets. The free public sources behind them, CT.gov, PubMed, EDGAR, and the rest, are individually open, but nobody stitches them together for free, and each one names drugs and sponsors differently enough that a naive join produces a mess.
 
-This is a version of [entity resolution](https://en.wikipedia.org/wiki/Record_linkage), a well-studied classical problem in data engineering: deciding when two records from different systems refer to the same real-world entity. The standard production answer at scale isn't an open-vocabulary matcher, it's curated lookup tables plus a human-in-the-loop review step, precisely because an unreviewed false match is unacceptable when the output feeds a business decision. That's the pattern this project follows: alias matching against a curated table, explicit per-antigen exclude rules, and unresolved names surfaced for a person to categorize rather than guessed at by a model.
+The underlying problem has a name: [entity resolution](https://en.wikipedia.org/wiki/Record_linkage), deciding when two records from different systems refer to the same real-world thing. At production scale the standard answer is curated lookup tables plus a human-in-the-loop review step, not an open-vocabulary matcher, because an unreviewed false match is unacceptable when the output feeds a business decision. This project follows that pattern: alias matching against a curated table, explicit per-antigen exclude rules, and unresolved names surfaced for a person to categorize instead of guessed at by a model.
 
-The alias-matching and modality-lookup approach here isn't new science. It's applying that established, curation-heavy discipline to a genuinely useful open dataset that nobody had bothered to assemble for free. The part that's less standard is the LLM synthesis layer: enforcing citation-grounding as a hard schema constraint, with every model-generated sentence checked against the real source-derived citation set before it's allowed to render, rather than trusting the model's self-reported citations. That pattern only became practical with production-grade structured-output APIs, and it's the piece of this pipeline I'd point to as the actual engineering bet.
+None of that is new science. It's the same curation-heavy discipline applied to a useful open dataset nobody had bothered to assemble for free. What's less standard is the LLM synthesis layer, where citation-grounding is enforced as a hard schema constraint: every model-generated sentence gets checked against the real source-derived citation set before it's allowed to render, instead of trusting the model's self-reported citations. That only became practical with production-grade structured-output APIs, and it's the piece of this pipeline I'd point to as the real engineering bet.
 
 ## How the pipeline is designed
 
@@ -109,7 +119,7 @@ The alias-matching and modality-lookup approach here isn't new science. It's app
 
 **Exclude rules are a curated per-antigen false-positive filter**, applied after the alias match and before modality assignment. Some aliases are short enough to false-positive against unrelated trials (`data/antigens.yaml` notes that HER2's "NEU" alias, if kept, would match neurology, neuroendocrine, and neutropenia trials that have nothing to do with the antigen). Antigens with unambiguous long aliases (ERBB2) don't need exclude terms at all; this is a per-antigen decision, not a global one.
 
-**Modality is assigned from a curated YAML lookup table, not inferred.** Drug names that don't match anything in `data/drug_modality.yaml` are collected as unknowns rather than guessed at, and surfaced through `taa-audit-matches` for one-keypress human categorization. This is the actual scaling bottleneck for adding antigens past the current 7: `data/drug_modality.yaml` and each antigen's `exclude_terms` are the trust layer, and they're both hand-curated.
+**Modality is assigned from a curated YAML lookup table, not inferred.** Drug names that don't match anything in `data/drug_modality.yaml` are collected as unknowns rather than guessed at, and surfaced through `taa-audit-matches` for one-keypress human categorization. That lookup table and each antigen's `exclude_terms` are the trust layer, both hand-curated, and they're the real bottleneck for adding antigens past the current 7.
 
 **LLM synthesis is citation-grounded by schema, not by prompt instruction alone.** The model doesn't see raw trial text; it sees pre-summarized program rollups and a citation list restricted to IDs actually referenced by those programs. Every output sentence carries a `citation_ids` field, and a post-hoc validation step drops any sentence whose citation isn't in the real, source-derived citation set (`validate_against_citations` in `taa/synth.py`). If the API call fails, the JSON doesn't parse, or Pydantic validation fails, the synthesis is omitted entirely rather than shown partially wrong.
 
@@ -127,13 +137,13 @@ Every source is free, public, and rate-limit-respectful. Each has its own asynci
 | --- | --- | --- | --- |
 | [CT.gov v2](https://clinicaltrials.gov/data-api/api) | Trials | 5 | Ground-truth clinical pipeline. |
 | [PubMed](https://www.ncbi.nlm.nih.gov/home/develop/api/) (E-utilities) | Papers | 3 (10 with an NCBI API key) | Canonical bibliographic record, peer-reviewed signal. |
-| PubMed conference abstracts | Abstracts | 3 (10 with an NCBI API key) | ASCO / AACR / ESMO / SITC / ASH supplements — readouts pre-publication. |
+| PubMed conference abstracts | Abstracts | 3 (10 with an NCBI API key) | ASCO / AACR / ESMO / SITC / ASH supplements, readouts ahead of publication. |
 | [OpenAlex](https://openalex.org/) | Papers + citation counts | 8 | Momentum signal (cites/year). |
 | [EDGAR](https://www.sec.gov/edgar) | SEC filings | 8 | 10-K / 8-K corporate disclosure of programs. |
 | [Open Targets](https://www.opentargets.org/) | Biology | 5 | Druggability, tractability, top diseases, safety liabilities. |
 | News RSS | Press releases | 8 | Real-time deal / IND / readout coverage. |
 | [openFDA](https://open.fda.gov/) Drugs | FDA approvals | 8 | NDA / BLA ground truth. |
-| [EMA EPAR](https://www.ema.europa.eu/en/medicines) | EU approvals | — | Marketing authorisation cross-check. |
+| [EMA EPAR](https://www.ema.europa.eu/en/medicines) | EU approvals | n/a | Marketing authorisation cross-check. |
 | [Europe PMC](https://europepmc.org/) preprints | bioRxiv / medRxiv | 6 | Leading indicator, 6-18 months ahead of PubMed. |
 | [NIH RePORTER](https://reporter.nih.gov/) | US-funded grants | 2 | Academic preclinical / translational pipeline (NCI, NHLBI, NIAID, NIDDK). |
 
@@ -141,11 +151,11 @@ Every source is free, public, and rate-limit-respectful. Each has its own asynci
 
 ### v0.1: HER2 vertical slice (2026-05-02)
 
-First end-to-end scorecard: HER2 from CT.gov, 4 sources, 3 antigens (HER2, BCMA, CLDN18.2), the v1 editorial design system, and the `audit-matches` curation tool. This is what proved the normalization approach actually held up against a heavily-trafficked, name-collision-prone target.
+First end-to-end scorecard: HER2 from CT.gov, 4 sources, 3 antigens (HER2, BCMA, CLDN18.2), the v1 editorial design system, and the `audit-matches` curation tool. It's what proved the normalization approach held up against a heavily-trafficked, name-collision-prone target.
 
 ### v0.2: scale to 11 sources, 6 antigens (2026-05-07)
 
-Added Europe PMC preprints and NIH RePORTER grants, plus B7-H3, 5T4, and ROR1. This is where the cross-antigen guard became necessary rather than theoretical: B7-H3 and B7-H4 share sponsors and combination trials, and the naive alias match leaked programs across antigen pages until the guard was added.
+Added Europe PMC preprints and NIH RePORTER grants, plus B7-H3, 5T4, and ROR1. The cross-antigen guard stopped being theoretical here: B7-H3 and B7-H4 share sponsors and combination trials, and the naive alias match leaked programs across antigen pages until the guard was added.
 
 ### v0.3: snapshot DB, catalysts, timeline (2026-05-15)
 
@@ -170,7 +180,7 @@ Added the SQLite snapshot database, the upcoming-catalysts view, the historic ti
 
 ## If you are skimming, look at these
 
-Five files worth opening if you want to see the actual work.
+Five files worth opening if you want to see how the pipeline actually works.
 
 1. **[`taa/schema.py`](taa/schema.py)** (505 lines). The data contracts. Closed-vocabulary `Literal` types and required citation IDs are what keep bad data from propagating downstream.
 2. **[`taa/normalize.py`](taa/normalize.py)** (276 lines). Alias matching, exclude rules, and modality assignment, the entity-resolution trust layer described above.
@@ -217,7 +227,7 @@ pip install -e ".[dev]"
 cp .env.example .env
 # edit .env: ANTHROPIC_API_KEY (required for synthesis), NCBI_API_KEY (optional,
 # raises PubMed rate limit from 3 req/s to 10 req/s), EDGAR_USER_AGENT (required
-# by SEC EDGAR — "Your Name your-email@example.com")
+# by SEC EDGAR, e.g. "Your Name your-email@example.com")
 
 taa-refresh              # full pipeline: fetch, normalize, synthesize, render
 open dist/index.html
@@ -227,16 +237,6 @@ open dist/index.html
 taa-audit                # coverage audit against curated drug lists
 taa-audit-matches        # interactive curation of unrecognized drug names
 ```
-
-## How this project was built, and how I used AI tools
-
-This is a solo project, and I owned the pipeline end to end: which data sources to trust, how to resolve entity collisions between programs that share sponsors and combination trials, what an LLM is and isn't allowed to assert about a citation, and when a missing result (no synthesis, no TPP, no catalyst) is more honest than a filled-in guess. Claude Code was my execution collaborator across most of the build, and every source client, schema, and template went through my review before landing on `main`.
-
-**I owned:** the normalization rules (which aliases need exclude terms, the cross-antigen guard, the longest-substring match), the curated data (`drug_modality.yaml`, `antigens.yaml`, TPP benchmarks, the conference calendar), the citation-grounding contract for the LLM layer, the precision-over-recall call on catalyst extraction, and the design system in `DESIGN.md`.
-
-**Claude Code accelerated:** the 11 async source clients (broadly similar retry/semaphore/pagination shapes once the first one was right), the Pydantic schema boilerplate, and the Jinja2 template scaffolding.
-
-The shape of this work matches what forward-deployed and applied engineering roles ask for: take an ambiguous, real-world data problem with no clean single API, own the judgment calls that make the output trustworthy rather than merely plausible, and ship a working system end to end rather than a notebook. Most of the actual engineering here is trust-layer work, deciding what a pipeline is allowed to assert automatically versus what needs a curated rule or a human in the loop, and staying close enough to the domain that a non-technical BD reader can rely on what's on the page without reading the code.
 
 ## License
 
